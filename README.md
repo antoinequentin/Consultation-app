@@ -1,6 +1,6 @@
-# Boussole — Consultation citoyenne en webinaire
+# Boussole — Consultation en webinaire
 
-Boussole est une application de consultation citoyenne en temps réel,
+Boussole est une application de consultation en temps réel,
 conçue pour être animée pendant un webinaire. Elle remplace et étend
 l'application Shiny d'origine (« Consultation BTE », voir
 [`ARCHITECTURE_ET_MIGRATION.md`](ARCHITECTURE_ET_MIGRATION.md) pour le
