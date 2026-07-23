@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Boussole — Consultation citoyenne en direct{% endblock %}
+{% block body_class %}{% endblock %}
+{% block body %}
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <a class="brand" href="/"><span class="brand-mark">◆</span> Boussole</a>
+    <a class="btn btn-ghost btn-sm" href="https://github.com/InseeFrLab/sspcloud-tutorials" target="_blank" rel="noopener">Documentation</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="hero-eyebrow">◆ Consultation citoyenne en direct</div>
+        <h1>Décider ensemble, pendant le webinaire.</h1>
+        <p class="lede">Boussole recueille les projets proposés par les participants, les fait départager par un vote, puis ouvre la discussion — impacts positifs, points de vigilance, avis et pistes d'amélioration — avec des résultats visibles en direct par toute l'assemblée.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" id="btn-open-create">Créer un webinaire</button>
+          <a class="btn btn-outline btn-lg" href="#rejoindre">Rejoindre avec un code</a>
+        </div>
+      </div>
+      <div class="hero-dial-wrap">
+        <div id="hero-dial" style="width:240px;height:240px;" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="choice-grid" id="rejoindre">
+      <div class="card choice-card join">
+        <div class="ico-tile">→</div>
+        <h2>Rejoindre une session</h2>
+        <p>Vous avez reçu un code à 5 caractères de l'animateur ? Entrez-le pour participer depuis votre téléphone ou votre ordinateur.</p>
+        <form id="join-form">
+          <div class="field">
+            <label for="join-code">Code du webinaire</label>
+            <input class="input input-code" id="join-code" maxlength="5" placeholder="X7K2P" autocomplete="off" autocapitalize="characters" required>
+            <div class="hint" id="join-error" style="color:var(--red);display:none;"></div>
+          </div>
+          <button class="btn btn-brass btn-block" type="submit">Rejoindre</button>
+        </form>
+      </div>
+
+      <div class="card choice-card create">
+        <div class="ico-tile">◆</div>
+        <h2>Animer un webinaire</h2>
+        <p>Créez une session en quelques secondes : titre, mot de passe animateur, et c'est parti. Vous obtenez un code à partager et votre poste de pilotage.</p>
+        <button class="btn btn-primary btn-block" id="btn-open-create-2">Créer un webinaire</button>
+      </div>
+    </div>
+
+    <div class="feature-row">
+      <div class="feature-item">
+        <h3>Plusieurs projets, un seul vote</h3>
+        <p>Chaque participant peut proposer un projet ; l'assemblée choisit ensuite celui qui sera étudié en priorité.</p>
+      </div>
+      <div class="feature-item">
+        <h3>Résultats en direct</h3>
+        <p>Cotations, contributions, classements : tout se met à jour instantanément, sans rafraîchir la page (WebSocket).</p>
+      </div>
+      <div class="feature-item">
+        <h3>Un poste de pilotage dédié</h3>
+        <p>L'animateur garde la main sur chaque étape, modère les contributions et exporte les données à tout moment.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog class="modal" id="create-modal">
+  <div class="modal-body">
+    <div class="modal-header">
+      <h2 style="margin:0;">Créer un webinaire</h2>
+      <button class="btn btn-ghost btn-icon" id="close-create" aria-label="Fermer">✕</button>
+    </div>
+    <form id="create-form">
+      <div class="field">
+        <label for="f-title">Titre du webinaire</label>
+        <input class="input" id="f-title" placeholder="Ex. Consultation transition écologique — Quartier Sud" required>
+      </div>
+      <div class="field">
+        <label for="f-password">Mot de passe animateur</label>
+        <input class="input" id="f-password" type="password" minlength="8" placeholder="Au moins 8 caractères" required>
+        <div class="hint">Vous en aurez besoin pour accéder au poste de pilotage depuis n'importe quel appareil. 12 caractères ou plus recommandés.</div>
+      </div>
+      <div class="switch-row">
+        <div>
+          <strong>Modération des contributions</strong>
+          <div class="hint">Les propositions des participants attendent votre validation avant d'être visibles de tous.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="f-moderation"><span class="track"></span></label>
+      </div>
+      <div class="switch-row">
+        <div>
+          <strong>Autoriser la proposition de projets</strong>
+          <div class="hint">Désactivez si vous démarrez directement avec un projet déjà défini.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="f-allow-projects" checked><span class="track"></span></label>
+      </div>
+
+      <details style="margin: var(--sp-4) 0;">
+        <summary style="cursor:pointer;font-weight:600;font-size:var(--fs-sm);">Pré-remplir un premier projet (optionnel)</summary>
+        <div style="margin-top:var(--sp-4);">
+          <div class="field">
+            <label for="f-seed-title">Titre du projet</label>
+            <input class="input" id="f-seed-title" placeholder="Ex. Rénovation thermique et extension du parc">
+          </div>
+          <div class="field">
+            <label for="f-seed-desc">Description courte</label>
+            <textarea class="input" id="f-seed-desc" rows="2"></textarea>
+          </div>
+        </div>
+      </details>
+
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Créer et obtenir le code</button>
+    </form>
+  </div>
+</dialog>
+
+{% endblock %}
+{% block extra_scripts %}<script src="/static/js/landing.js"></script>{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Projection — {{ webinar.title }}{% endblock %}
+{% block body_class %}projector-body{% endblock %}
+{% block body_attrs %}data-code="{{ webinar.code }}"{% endblock %}
+{% block body %}
+
+<header class="proj-header">
+  <a class="brand" href="/" style="pointer-events:none;"><span class="brand-mark">◆</span> Boussole</a>
+  <div style="text-align:right;">
+    <div style="font-size:var(--fs-md);font-weight:600;">{{ webinar.title }}</div>
+    <div class="text-sm" style="color:var(--night-text-soft);" id="presence-line">—</div>
+  </div>
+</header>
+
+<main class="proj-main" id="proj-main">
+  <div class="dial" style="width:200px;height:200px;" id="proj-dial"></div>
+  <h1 class="proj-title" id="proj-title">Connexion à la session…</h1>
+</main>
+
+<div class="proj-footer mono">{{ webinar.code }}</div>
+
+{% endblock %}
+{% block extra_scripts %}<script src="/static/js/projector.js"></script>{% endblock %}

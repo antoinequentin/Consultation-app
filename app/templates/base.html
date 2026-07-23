@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ app_name }}{% endblock %}</title>
+<meta name="description" content="Boussole — consultation citoyenne en webinaire, en temps réel.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%230A0F2C%22/><polygon points=%2250,14 44,50 56,50%22 fill=%22%23B3823F%22/></svg>">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/pages.css">
+{% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}" {% block body_attrs %}{% endblock %}>
+{% block body %}{% endblock %}
+<script src="/static/js/common.js"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

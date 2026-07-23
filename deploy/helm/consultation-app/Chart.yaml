@@ -1,0 +1,12 @@
+apiVersion: v2
+name: boussole
+description: >
+  Application de consultation citoyenne en webinaire (FastAPI + WebSocket).
+  Chart minimal et générique (Deployment + Service + Ingress + PVC
+  optionnelle), écrit pour SSPCloud en suivant les principes du tutoriel
+  InseeFrLab "deployment/shiny-app.md", adaptés à un service Python qui
+  n'est pas du Shiny (donc sans dépendre du chart "shiny" propre à
+  shiny-server).
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

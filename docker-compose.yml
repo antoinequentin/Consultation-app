@@ -1,0 +1,30 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/app.db
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - DEBUG=true
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Service optionnel pour tester le mode PostgreSQL en local avant de
+  # déployer sur SSPCloud (cf. TUTORIEL_DEPLOIEMENT_SSPCLOUD.md).
+  # Démarrer avec : docker compose --profile postgres up
+  db:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      - POSTGRES_DB=boussole
+      - POSTGRES_USER=boussole
+      - POSTGRES_PASSWORD=boussole
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

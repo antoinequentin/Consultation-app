@@ -1,0 +1,66 @@
+# Valeurs par défaut — à copier/adapter (cf. TUTORIEL_DEPLOIEMENT_SSPCLOUD.md).
+# Ne committez jamais de secrets ici : utilisez `existingSecret`.
+
+replicaCount: 1
+# IMPORTANT : si vous passez à plusieurs réplicas (replicaCount > 1), vous
+# devez utiliser PostgreSQL (DATABASE_URL) plutôt que SQLite, et désactiver
+# `persistence` ci-dessous — un fichier SQLite ne peut pas être partagé en
+# écriture entre plusieurs pods. Voir le tutoriel, section "Passer à
+# l'échelle".
+
+image:
+  repository: VOTRE_PSEUDO_DOCKERHUB/consultation-bte-app
+  tag: latest
+  pullPolicy: Always
+
+service:
+  port: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  # Domaine SSPCloud : <quelquechose>.lab.sspcloud.fr (voir le tutoriel
+  # pour la procédure de réservation/configuration du sous-domaine).
+  host: consultation-bte.lab.sspcloud.fr
+  # Sur SSPCloud, le contrôleur Ingress du cluster fournit en général déjà
+  # un certificat HTTPS valide pour tout le domaine *.lab.sspcloud.fr : il
+  # n'y a donc normalement RIEN à configurer ici. Ne passez `tls: true`
+  # (avec un secretName + une ressource cert-manager, voir la doc SSPCloud
+  # à jour) que si vous constatez que ce n'est pas le cas sur votre cluster.
+  tls: false
+  # Timeouts augmentés : indispensable pour que les connexions WebSocket
+  # de longue durée ne soient pas coupées par l'ingress nginx (timeout
+  # par défaut : 60s).
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+# Nom d'un Secret Kubernetes existant (créé manuellement, voir le
+# tutoriel) exposant au minimum SECRET_KEY, et éventuellement
+# DATABASE_URL si vous utilisez PostgreSQL plutôt que SQLite.
+existingSecret: boussole-secrets
+
+env:
+  APP_NAME: "Boussole"
+  PUBLIC_BASE_URL: "https://consultation-bte.lab.sspcloud.fr"
+  DEBUG: "false"
+
+# Stockage persistant pour le fichier SQLite (inutile si DATABASE_URL
+# pointe vers un PostgreSQL externe — voir le tutoriel pour le choix).
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClassName: ""
+  mountPath: /app/data
+
+probes:
+  path: /api/healthz

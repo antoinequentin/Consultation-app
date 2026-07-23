@@ -1,0 +1,14 @@
+🧭 Boussole a été déployée.
+
+Adresse de l'application (laisser le temps au certificat/DNS de se propager
+si c'est le premier déploiement sur ce sous-domaine) :
+
+  https://{{ .Values.ingress.host }}
+
+Vérifier que le pod démarre correctement :
+
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -f
+
+En cas de problème, consultez TUTORIEL_DEPLOIEMENT_SSPCLOUD.md (section
+"Déboguer un déploiement").

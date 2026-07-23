@@ -1,0 +1,82 @@
+# Alternative simple au chart Helm (deploy/helm/) : trois manifestes
+# Kubernetes "bruts", appliqués directement avec `kubectl apply -f`. C'est
+# le même principe que celui utilisé dans les formations InseeFrLab
+# (ex. formation-mlops/kubernetes/) : moins flexible qu'un chart Helm,
+# mais plus rapide à comprendre et à modifier pour un premier déploiement.
+#
+# Avant d'appliquer : remplacez VOTRE_PSEUDO_DOCKERHUB par votre identifiant
+# Docker Hub, et créez le Secret `boussole-secrets` (voir
+# TUTORIEL_DEPLOIEMENT_SSPCLOUD.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boussole
+  labels:
+    app: boussole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: boussole
+  template:
+    metadata:
+      labels:
+        app: boussole
+    spec:
+      # IMPORTANT : le conteneur tourne en non-root (uid/gid 1000, voir le
+      # Dockerfile). Sans fsGroup, un PersistentVolume fraîchement
+      # provisionné est généralement monté avec les droits root:root, ce
+      # qui empêcherait l'application d'écrire sa base SQLite dans le
+      # volume persistant monté sur /app/data au premier démarrage.
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+      containers:
+        - name: app
+          image: VOTRE_PSEUDO_DOCKERHUB/consultation-bte-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: boussole-secrets
+          env:
+            - name: APP_NAME
+              value: "Boussole"
+            - name: PUBLIC_BASE_URL
+              value: "https://consultation-bte.lab.sspcloud.fr"
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 8000
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 8000
+            initialDelaySeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: boussole-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: boussole-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

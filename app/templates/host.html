@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Pilotage — {{ webinar.title }} — Boussole{% endblock %}
+{% block body_attrs %}data-code="{{ webinar.code }}"{% endblock %}
+{% block body %}
+
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <h1>🧭 Espace animateur</h1>
+    <p>{{ webinar.title }} · <span class="mono">{{ webinar.code }}</span></p>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-password" style="color:#fff;">Mot de passe</label>
+        <input class="input" id="login-password" type="password" required autofocus>
+      </div>
+      <button class="btn btn-brass btn-block" type="submit">Se connecter</button>
+      <p class="text-sm" id="login-error" style="color:#ff9fb6;display:none;margin-top:var(--sp-3);"></p>
+    </form>
+  </div>
+</div>
+
+<div id="host-shell" class="host-shell" style="display:none;">
+  <aside class="host-sidebar">
+    <a class="brand" href="/">◆ Boussole</a>
+    <div class="webinar-code-chip" style="width:fit-content;">{{ webinar.code }}</div>
+    <nav class="host-nav" id="host-nav">
+      <button data-panel="overview" class="active">Vue d'ensemble</button>
+      <button data-panel="projects">Projets</button>
+      <button data-panel="consultation">Consultation</button>
+      <button data-panel="moderation">Modération</button>
+      <button data-panel="settings">Paramètres</button>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:var(--sp-2);">
+      <a class="btn btn-ghost btn-sm" id="open-projector" target="_blank" rel="noopener">🖥 Écran de projection</a>
+      <a class="btn btn-ghost btn-sm" id="open-participant" target="_blank" rel="noopener">↗ Vue participant</a>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <main class="host-main">
+    <div class="host-topbar">
+      <div>
+        <h1 style="margin:0;">{{ webinar.title }}</h1>
+        <p class="text-sm text-soft" id="host-phase-label" style="margin:0;">—</p>
+      </div>
+      <div style="display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap;">
+        <span class="badge badge-live" id="presence-badge"><span class="badge-dot"></span> 0 en ligne</span>
+        <button class="btn btn-outline btn-sm" id="show-qr-btn">QR / Lien</button>
+        <a class="btn btn-outline btn-sm" id="export-btn">Exporter (.zip)</a>
+      </div>
+    </div>
+
+    <section class="host-panel active" id="panel-overview"></section>
+    <section class="host-panel" id="panel-projects"></section>
+    <section class="host-panel" id="panel-consultation"></section>
+    <section class="host-panel" id="panel-moderation"></section>
+    <section class="host-panel" id="panel-settings"></section>
+  </main>
+
+  <aside class="host-aside">
+    <h3>Statistiques en direct</h3>
+    <div id="aside-stats"></div>
+  </aside>
+</div>
+
+<dialog class="modal" id="qr-modal">
+  <div class="modal-body" style="text-align:center;">
+    <div class="modal-header"><h2 style="margin:0;">Rejoindre le webinaire</h2><button class="btn btn-ghost btn-icon" id="close-qr">✕</button></div>
+    <img id="qr-img" alt="QR code de la session" style="width:220px;height:220px;margin:0 auto;display:block;">
+    <p class="mono text-sm" id="qr-url" style="word-break:break-all;"></p>
+  </div>
+</dialog>
+
+{% endblock %}
+{% block extra_scripts %}<script src="/static/js/host.js"></script>{% endblock %}

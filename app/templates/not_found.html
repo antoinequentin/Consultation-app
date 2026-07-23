@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Webinaire introuvable — {{ app_name }}{% endblock %}
+{% block body %}
+<header class="app-header">
+  <div class="app-header-inner">
+    <a class="brand" href="/"><span class="brand-mark">◆</span> Boussole</a>
+  </div>
+</header>
+<main class="container-narrow app-main">
+  <div class="empty-state card">
+    <div class="ico">🧭</div>
+    <h1 style="font-size:var(--fs-2xl);">Webinaire introuvable</h1>
+    <p>{% if code %}Aucun webinaire ne correspond au code <strong class="mono">{{ code }}</strong>.{% else %}Cette page n'existe pas.{% endif %} Vérifiez le code auprès de l'animateur, ou créez votre propre session.</p>
+    <a class="btn btn-primary" href="/">Retour à l'accueil</a>
+  </div>
+</main>
+{% endblock %}

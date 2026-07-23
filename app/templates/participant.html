@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ webinar.title }} — Boussole{% endblock %}
+{% block body_attrs %}data-code="{{ webinar.code }}"{% endblock %}
+{% block body %}
+<header class="app-header">
+  <div class="app-header-inner">
+    <a class="brand" href="/"><span class="brand-mark">◆</span> Boussole</a>
+    <div style="display:flex;align-items:center;gap:var(--sp-3);">
+      <span class="text-sm text-soft" id="presence-count">— en ligne</span>
+      <span class="webinar-code-chip">{{ webinar.code }}</span>
+    </div>
+  </div>
+</header>
+
+<main class="container-narrow app-main">
+  <div class="phase-banner">
+    <div class="dial-compact" id="header-dial" style="width:52px;height:52px;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <p class="text-xs text-faint" style="margin:0;text-transform:uppercase;letter-spacing:.06em;">{{ webinar.title }}</p>
+      <h1 class="ttl" id="phase-title">Connexion…</h1>
+    </div>
+    <div>
+      <input class="input text-sm" id="display-name-input" placeholder="Votre nom (optionnel)" style="width:160px;padding:.45rem .6rem;" maxlength="80">
+    </div>
+  </div>
+
+  <div id="phase-content">
+    <div class="empty-state"><span class="spinner"></span></div>
+  </div>
+</main>
+{% endblock %}
+{% block extra_scripts %}<script src="/static/js/participant.js"></script>{% endblock %}
