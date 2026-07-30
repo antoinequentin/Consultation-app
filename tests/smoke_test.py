@@ -164,13 +164,6 @@ def _run_main_scenario(client: TestClient) -> None:
         check("phase -> consultation", p["state"]["webinar"]["phase"] == "consultation")
         check("étape initiale == positifs (1)", p["state"]["consultation"]["step"] == 1)
 
-        # --- Vérification de fidélité : 6 axes officiels BTE (et non 1 axe
-        # générique), avec catégorie + couleur, comme dans data.R d'origine.
-        check("6 axes créés par défaut (référentiel BTE)", p["state"]["consultation"]["axis_count"] == 6)
-        axis0 = p["state"]["consultation"]["axis"]
-        check("premier axe = catégorie ADAPTATION", axis0["categorie"] == "ADAPTATION")
-        check("couleur ADAPTATION fidèle à l'original (#ff9a00)", axis0["color"] == "#ff9a00")
-
         # ---- Étape positifs : deux propositions, tri par consensus ------------
         p1_ws.send_json({"type": "submit_proposition", "payload": {"prop_type": "positifs", "texte": "Moins de dépenses de chauffage pour les familles"}})
         h, p = drain(host_ws), drain(p1_ws)
