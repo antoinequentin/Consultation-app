@@ -1,12 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Boussole — Consultation citoyenne en direct{% endblock %}
+{% block title %}Boussole — Donnez à ce projet une ambition environnementale{% endblock %}
 {% block body_class %}{% endblock %}
 {% block body %}
 
 <header class="app-header">
   <div class="app-header-inner">
-    <a class="brand" href="/"><span class="brand-mark">◆</span> Boussole</a>
-    <a class="btn btn-ghost btn-sm" href="https://github.com/InseeFrLab/sspcloud-tutorials" target="_blank" rel="noopener">Documentation</a>
+    <a class="brand" href="/"><img class="brand-mark" src="/static/img/logo.png" alt=""> Boussole</a>
   </div>
 </header>
 
@@ -14,7 +13,7 @@
   <section class="hero">
     <div class="container hero-grid">
       <div>
-        <div class="hero-eyebrow">◆ Consultation citoyenne en direct</div>
+        <div class="hero-eyebrow"><img class="brand-mark" src="/static/img/logo.png" alt=""> Donnez à ce projet une ambition environnementale</div>
         <h1>Décider ensemble, pendant le webinaire.</h1>
         <p class="lede">Boussole recueille les projets proposés par les participants, les fait départager par un vote, puis ouvre la discussion — impacts positifs, points de vigilance, avis et pistes d'amélioration — avec des résultats visibles en direct par toute l'assemblée.</p>
         <div class="hero-actions">
@@ -23,7 +22,7 @@
         </div>
       </div>
       <div class="hero-dial-wrap">
-        <div id="hero-dial" style="width:240px;height:240px;" aria-hidden="true"></div>
+        <img src="/static/img/logo.png" alt="Boussole" class="hero-logo">
       </div>
     </div>
   </section>
@@ -40,7 +39,7 @@
             <input class="input input-code" id="join-code" maxlength="5" placeholder="X7K2P" autocomplete="off" autocapitalize="characters" required>
             <div class="hint" id="join-error" style="color:var(--red);display:none;"></div>
           </div>
-          <button class="btn btn-brass btn-block" type="submit">Rejoindre</button>
+          <button class="btn btn-primary btn-block" type="submit">Rejoindre</button>
         </form>
       </div>
 

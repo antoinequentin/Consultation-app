@@ -4,7 +4,7 @@
 {% block body %}
 <header class="app-header">
   <div class="app-header-inner">
-    <a class="brand" href="/"><span class="brand-mark">◆</span> Boussole</a>
+    <a class="brand" href="/"><img class="brand-mark" src="/static/img/logo.png" alt=""> Boussole</a>
     <div style="display:flex;align-items:center;gap:var(--sp-3);">
       <span class="text-sm text-soft" id="presence-count">— en ligne</span>
       <span class="webinar-code-chip">{{ webinar.code }}</span>
@@ -12,7 +12,7 @@
   </div>
 </header>
 
-<main class="container-narrow app-main">
+<main class="container-narrow app-main" id="app-main">
   <div class="phase-banner">
     <div class="dial-compact" id="header-dial" style="width:52px;height:52px;flex-shrink:0;"></div>
     <div style="flex:1;">
@@ -27,6 +27,13 @@
   <div id="phase-content">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
+
+  <footer class="app-footer-legal text-xs text-faint" style="margin-top:var(--sp-6);padding:var(--sp-3) 0;text-align:center;">
+    Vos réponses sont anonymes : aucune information ne permet de vous identifier personnellement.
+    <button type="button" id="privacy-link" class="link-inline" style="background:none;border:none;padding:0;text-decoration:underline;cursor:pointer;color:inherit;font:inherit;">
+      Gérer mes données
+    </button>
+  </footer>
 </main>
 {% endblock %}
 {% block extra_scripts %}<script src="/static/js/participant.js"></script>{% endblock %}

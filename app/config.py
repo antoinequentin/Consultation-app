@@ -45,6 +45,16 @@ class Settings:
     # du pod invalide toutes les sessions animateur en cours).
     SECRET_KEY: str = os.getenv("SECRET_KEY") or secrets.token_hex(32)
 
+    # Secret d'accès à la vue super-admin (/superadmin), qui permet de
+    # lister et supprimer des webinaires entiers — donc de "nettoyer la
+    # base" en développement/démo. Volontairement PAS un compte
+    # utilisateur classique (l'app n'a pas cette notion) : un secret
+    # partagé, à définir en variable d'environnement en production.
+    # Si absent (développement local sans .env), un secret est généré au
+    # démarrage et affiché une seule fois dans les logs — jamais avec une
+    # valeur par défaut fixe qui serait devinable/documentée en clair.
+    ADMIN_SECRET: str = os.getenv("ADMIN_SECRET") or secrets.token_urlsafe(24)
+
     # Mot de passe par défaut proposé à la création d'un webinaire si
     # l'utilisateur n'en saisit pas. Repris du comportement de l'app
     # d'origine (ADMIN_PASSWORD), mais désormais configurable PAR webinaire
@@ -74,6 +84,19 @@ class Settings:
     # --- Export / data ---------------------------------------------------
     DATA_DIR: Path = BASE_DIR / "data"
     EXPORT_DIR: Path = BASE_DIR / "data" / "exports"
+
+    # --- Stockage des images uploadées (§2 / §7) --------------------------
+    # "local" (défaut) : fichiers sur disque sous data/uploads/ (PAS
+    # app/static/uploads/, pour rester sous le volume persistant monté
+    # sur /app/data en production — voir app/storage.py pour le détail),
+    # servis via un montage StaticFiles dédié sous /uploads. Fonctionnel
+    # immédiatement, y compris en production mono-instance avec volume
+    # persistant.
+    # "s3" : stockage objet externe (S3/MinIO), pour un déploiement
+    # multi-instances sans volume partagé — voir le squelette
+    # S3StorageBackend documenté dans app/storage.py pour les variables
+    # d'environnement supplémentaires à fournir (S3_ENDPOINT_URL, etc.).
+    STORAGE_BACKEND: str = os.getenv("STORAGE_BACKEND", "local")
 
     # --- Divers ----------------------------------------------------------
     DEBUG: bool = _bool_env("DEBUG", False)

@@ -11,3 +11,5 @@ data/exports/*
 .env
 *.egg-info/
 .DS_Store
+app.zip
+.env~

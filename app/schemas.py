@@ -60,11 +60,36 @@ class ProjectSubmitPayload(BaseModel):
     description: str = Field(default="", max_length=4000)
     context: str = Field(default="", max_length=4000)
     image_url: str | None = Field(default=None, max_length=1024)
+    map_url: str | None = Field(default=None, max_length=1024)
+    porteur: str | None = Field(default=None, max_length=255)
+    budget: str | None = Field(default=None, max_length=120)
+    territoire: str | None = Field(default=None, max_length=255)
+    stade: str | None = Field(default=None, max_length=120)
 
     @field_validator("title", "description", "context")
     @classmethod
     def _strip(cls, v: str) -> str:
         return v.strip()
+
+    @field_validator("porteur", "budget", "territoire", "stade")
+    @classmethod
+    def _strip_optional(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        return v or None
+
+    @field_validator("image_url", "map_url")
+    @classmethod
+    def _strip_url(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if not (v.startswith("http://") or v.startswith("https://")):
+            raise ValueError("Le lien doit commencer par http:// ou https://")
+        return v
 
 
 class PropositionSubmitPayload(BaseModel):
@@ -93,3 +118,26 @@ class JoinPayload(BaseModel):
             return None
         v = v.strip()
         return v or None
+
+
+class ParticipantErasurePayload(BaseModel):
+    """Droit à l'effacement RGPD (§7) : le participant fournit son propre
+    participant_id (uuid généré côté client, jamais transmis par un tiers)
+    et choisit le mode d'effacement souhaité."""
+
+    participant_id: str = Field(min_length=1, max_length=36)
+    mode: str = Field(default="anonymize")  # "anonymize" | "erase"
+
+    @field_validator("mode")
+    @classmethod
+    def _check_mode(cls, v: str) -> str:
+        if v not in ("anonymize", "erase"):
+            raise ValueError("mode doit être 'anonymize' ou 'erase'.")
+        return v
+
+
+class ProjectDuplicatePayload(BaseModel):
+    """Mode "projet type" (§7) : identifie le projet à dupliquer depuis un
+    webinaire source vers le webinaire cible (celui de l'URL)."""
+
+    source_project_id: int

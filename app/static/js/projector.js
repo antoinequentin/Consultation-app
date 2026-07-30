@@ -11,6 +11,9 @@
   const titleEl = document.getElementById("proj-title");
   const presenceLine = document.getElementById("presence-line");
 
+  const stepTimerEl = document.getElementById("proj-step-timer");
+  let stopStepTimer = () => {};
+
   const ws = Boussole.connect(code, { role: "viewer" });
   ws.on("state", onState);
   ws.on("_not_found", () => { titleEl.textContent = "Webinaire introuvable."; });
@@ -21,6 +24,14 @@
     Boussole.renderDial(dial, state.webinar.phase, state.consultation ? state.consultation.step : 0, { showLabel: false, size: 140 });
 
     const phase = state.webinar.phase;
+    stopStepTimer();
+    if (phase === "consultation") {
+      stopStepTimer = Boussole.mountStepTimer(stepTimerEl, state.consultation);
+    } else {
+      stepTimerEl.innerHTML = "";
+      stopStepTimer = () => {};
+    }
+
     if (phase === "lobby") return renderWaiting(state, "La session va bientôt commencer");
     if (phase === "project_submission") return renderProjectSubmission(state);
     if (phase === "project_vote") return renderProjectVote(state);
@@ -38,7 +49,7 @@
 
   function renderWaiting(state, label) {
     titleEl.textContent = label;
-    Boussole.qsa(".proj-extra", main).forEach((n) => n.remove());
+    Boussole.qsa(".proj-extra, .proj-project-panel", main).forEach((n) => n.remove());
     const extra = document.createElement("div");
     extra.className = "proj-extra";
     extra.innerHTML = joinBlock();
@@ -47,7 +58,7 @@
 
   function renderProjectSubmission(state) {
     titleEl.textContent = "Proposez votre projet !";
-    Boussole.qsa(".proj-extra", main).forEach((n) => n.remove());
+    Boussole.qsa(".proj-extra, .proj-project-panel", main).forEach((n) => n.remove());
     const extra = document.createElement("div");
     extra.className = "proj-extra";
     const pf = state.project_phase;
@@ -60,7 +71,7 @@
 
   function renderProjectVote(state) {
     titleEl.textContent = "Votez pour le projet à étudier";
-    Boussole.qsa(".proj-extra", main).forEach((n) => n.remove());
+    Boussole.qsa(".proj-extra, .proj-project-panel", main).forEach((n) => n.remove());
     const pf = state.project_phase;
     const sorted = [...pf.projects].sort((a, b) => (b.votes || 0) - (a.votes || 0));
     const total = pf.total_votes;
@@ -79,7 +90,19 @@
   function renderConsultation(state) {
     const c = state.consultation;
     if (!c || !c.project) { titleEl.textContent = "Préparation de la consultation…"; return; }
-    Boussole.qsa(".proj-extra", main).forEach((n) => n.remove());
+    Boussole.qsa(".proj-extra, .proj-project-panel", main).forEach((n) => n.remove());
+
+    let panelWrap = document.getElementById("proj-project-panel-slot");
+    if (!panelWrap) {
+      panelWrap = document.createElement("div");
+      panelWrap.id = "proj-project-panel-slot";
+      panelWrap.className = "proj-project-panel";
+      main.insertBefore(panelWrap, dial);
+    }
+    panelWrap.innerHTML = Boussole.projectPanel(c.project, {
+      axisIndex: c.axis_index, axisCount: c.axis_count, variant: "dark",
+    });
+
     const extra = document.createElement("div");
     extra.className = "proj-extra";
 
@@ -87,9 +110,9 @@
       titleEl.textContent = c.axis ? c.axis.texte : c.project.title;
       const cot = c.cotation || { counts: {}, total: 0, percentages: {} };
       const tiles = [
-        { k: "FAVORABLE", label: "Favorable", color: "var(--green)" },
-        { k: "NEUTRE", label: "Neutre", color: "var(--neutral-pass)" },
-        { k: "DEFAVORABLE", label: "Défavorable", color: "var(--red)" },
+        { k: "FAVORABLE", label: "Favorable", color: "var(--cotation-favorable)" },
+        { k: "NEUTRE", label: "Neutre", color: "var(--cotation-neutre)" },
+        { k: "DEFAVORABLE", label: "Défavorable", color: "var(--cotation-defavorable)" },
       ];
       extra.innerHTML = `
         ${c.axis ? Boussole.categoryBadge(c.axis.categorie, c.axis.color) : ""}
@@ -115,7 +138,7 @@
 
   function renderEnded(state) {
     titleEl.textContent = "Merci pour votre participation !";
-    Boussole.qsa(".proj-extra", main).forEach((n) => n.remove());
+    Boussole.qsa(".proj-extra, .proj-project-panel", main).forEach((n) => n.remove());
     const extra = document.createElement("div");
     extra.className = "proj-extra";
     extra.innerHTML = state.consultation && state.consultation.project

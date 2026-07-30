@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Super-admin — {{ app_name }}{% endblock %}
+{% block body %}
+
+<main class="container" style="padding: var(--sp-6) var(--sp-4);">
+  <h1>Super-admin</h1>
+  <p class="text-sm text-soft">
+    Vue de nettoyage — supprime un webinaire et TOUTES ses données (projets,
+    participants, contributions, votes, historique). Irréversible.
+  </p>
+
+  {% if not webinars %}
+  <p class="text-sm">Aucun webinaire en base.</p>
+  {% else %}
+  <table class="superadmin-table">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Titre</th>
+        <th>Phase</th>
+        <th>Créé le</th>
+        <th>Participants</th>
+        <th>Projets</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for w in webinars %}
+      <tr id="row-{{ w.id }}">
+        <td class="mono">{{ w.code }}</td>
+        <td>{{ w.title }}</td>
+        <td>{{ w.phase }}</td>
+        <td class="text-sm text-soft">{{ w.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td>{{ w.nb_participants }}</td>
+        <td>{{ w.nb_projects }}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" data-id="{{ w.id }}" data-title="{{ w.title }}">
+            Supprimer
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</main>
+
+<script>
+  const SECRET = {{ secret | tojson }};
+  document.querySelectorAll("[data-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm(`Supprimer définitivement « ${btn.dataset.title} » et toutes ses données ?`)) return;
+      btn.disabled = true;
+      const res = await fetch(`/api/superadmin/webinars/${btn.dataset.id}/delete?secret=${encodeURIComponent(SECRET)}`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        document.getElementById(`row-${btn.dataset.id}`).remove();
+      } else {
+        alert("Échec de la suppression.");
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+{% endblock %}

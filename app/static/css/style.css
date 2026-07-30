@@ -1,25 +1,82 @@
 /* ==========================================================================
    BOUSSOLE — système de design
    ----------------------------------------------------------------------
-   Identité : un outil de consultation citoyenne pour webinaires, dans la
-   continuité visuelle des services numériques de l'État (Bleu France,
-   Rouge Marianne) mais avec une identité propre construite autour de la
-   métaphore de la boussole : le cadran à aiguille laiton sert d'indicateur
+   Identité : conforme au Système de Design de l'État (DSFR) — typographie
+   Marianne, bleu France comme couleur d'action principale — avec une
+   touche propre à l'outil : le cadran à aiguille laiton comme indicateur
    de progression à travers les phases du webinaire, repris sur les trois
-   écrans (participant, animateur, projection).
+   écrans (participant, animateur, projection), et une palette dédiée pour
+   les axes de consultation et les cotations, elle aussi alignée sur les
+   teintes DSFR (voir plus bas).
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+/* Police Marianne (DSFR) — fichiers à déposer dans
+   app/static/fonts/marianne/ (voir le README de ce dossier : ils ne
+   peuvent pas être embarqués automatiquement, Marianne étant distribuée
+   uniquement via le CDN officiel du DSFR, non accessible en
+   développement ici). Tant qu'ils sont absents, la pile de secours
+   (Arial/system-ui) prend le relais silencieusement — `font-display: swap`
+   affiche déjà le texte en secours pendant le chargement, `font-display:
+   fallback` court-circuite l'attente si le fichier n'existe pas du tout. */
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Thin.woff2') format('woff2');
+  font-weight: 100; font-style: normal; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Thin_Italic.woff2') format('woff2');
+  font-weight: 100; font-style: italic; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Light.woff2') format('woff2');
+  font-weight: 300; font-style: normal; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Light_Italic.woff2') format('woff2');
+  font-weight: 300; font-style: italic; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Regular_Italic.woff2') format('woff2');
+  font-weight: 400; font-style: italic; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Medium.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Medium_Italic.woff2') format('woff2');
+  font-weight: 500; font-style: italic; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Bold.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-Bold_Italic.woff2') format('woff2');
+  font-weight: 700; font-style: italic; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-ExtraBold.woff2') format('woff2');
+  font-weight: 800; font-style: normal; font-display: fallback;
+}
+@font-face {
+  font-family: 'Marianne'; src: url('/static/fonts/marianne/Marianne-ExtraBold_Italic.woff2') format('woff2');
+  font-weight: 800; font-style: italic; font-display: fallback;
+}
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap');
 
 :root {
   /* Couleurs — claires */
   --ink: #181a1f;
   --ink-soft: #50525c;
   --ink-faint: #898c97;
-  --paper: #f7f5f0;
+  --paper: #f6f6f6;
   --surface: #ffffff;
-  --border: #e3e0d6;
-  --border-strong: #cfcabb;
+  --border: #e5e5e5;
+  --border-strong: #cecece;
 
   --france-blue: #000091;
   --france-blue-700: #1212c2;
@@ -39,6 +96,56 @@
 
   --neutral-pass: #8b8d98;
 
+  /* --------------------------------------------------------------------
+     Palette des axes — alignement DSFR (§1.3 du cahier des charges).
+     3 niveaux par axe : principal (fond fort / traits), foncé (texte sur
+     fond clair, meilleur contraste), clair (fond léger / halos).
+     "GUIDE TRANSVERSE" est un 7e axe optionnel, hors des 6 dimensions par
+     défaut de la Boussole de la Transition Écologique : il n'est jamais
+     ajouté automatiquement à un projet, mais reste disponible si
+     l'animateur l'ajoute manuellement via "Ajouter un axe".
+     -------------------------------------------------------------------- */
+  --axe-adaptation: #FFCA00;
+  --axe-adaptation-dark: #C3992A;
+  --axe-adaptation-light: #fcd17b;
+
+  --axe-economie-circulaire: #d5706f;
+  --axe-economie-circulaire-dark: #a94645;
+  --axe-economie-circulaire-light: #da8a89;
+
+  --axe-attenuation: #6E445A;
+  --axe-attenuation-dark: #502e4d;
+  --axe-attenuation-light: #db9cd6;
+
+  --axe-biodiversite: #68A532;
+  --axe-biodiversite-dark: #496b30;
+  --axe-biodiversite-light: #9ae95d;
+
+  --axe-eau: #465F9D;
+  --axe-eau-dark: #424d73;
+  --axe-eau-light: #6f89d1;
+
+  --axe-pollution: #C08C65;
+  --axe-pollution-dark: #845d48;
+  --axe-pollution-light: #eccab6;
+
+  --axe-guide-transverse: #8585f6;
+  --axe-guide-transverse-dark: #313178;
+  --axe-guide-transverse-light: #b1b1f9;
+
+  /* Palette des cotations (budget vert). Le modèle de données actuel ne
+     gère que 3 réponses (FAVORABLE / NEUTRE / DEFAVORABLE) — voir la note
+     dans CHANGELOG_DSFR.md pour les niveaux supplémentaires du cahier des
+     charges qui nécessitent une évolution du schéma. */
+  --cotation-favorable: #18753c;
+  --cotation-favorable-conditions: #2fc368;
+  --cotation-mixte: #60e0eb;
+  --cotation-neutre: #939393;
+  --cotation-defavorable: #9a4d3a;
+  --cotation-a-approfondir: #fbe769;
+  --cotation-non-cote: #e5e5e5;
+
+
   /* Mode nuit (projection) */
   --night: #0a0f2c;
   --night-surface: #131a42;
@@ -48,8 +155,8 @@
   --night-text-soft: #aab0d6;
 
   /* Typo */
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body: 'Public Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Marianne', Arial, system-ui, sans-serif;
+  --font-body: 'Marianne', Arial, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   --fs-xs: 0.75rem;
@@ -72,13 +179,20 @@
   --sp-7: 3rem;
   --sp-8: 4rem;
 
-  --radius: 14px;
-  --radius-sm: 8px;
+  /* DSFR strict : les composants de base (cartes, boutons, cadres) sont à
+     angles droits — le DSFR n'utilise pas de rayon sur .fr-card/.fr-btn.
+     --radius-badge suit .fr-badge (0.25rem) ; --radius-pill reste pour les
+     vraies pastilles/pilules (compteurs, indicateurs). */
+  --radius: 0;
+  --radius-sm: 0;
+  --radius-badge: 0.25rem;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(24, 26, 31, 0.06), 0 1px 1px rgba(24, 26, 31, 0.04);
-  --shadow-md: 0 8px 24px rgba(24, 26, 31, 0.08), 0 2px 6px rgba(24, 26, 31, 0.05);
-  --shadow-lg: 0 20px 48px rgba(24, 26, 31, 0.14);
+  /* Ombres DSFR (--raised-shadow / --lifted-shadow / --overlap-shadow),
+     nettement plus discrètes que des ombres "material design" larges. */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 18, 0.16);
+  --shadow-md: 0 3px 9px rgba(0, 0, 18, 0.16);
+  --shadow-lg: 0 6px 18px rgba(0, 0, 18, 0.16);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -98,7 +212,7 @@ body {
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.12;
   margin: 0 0 var(--sp-3);
   letter-spacing: -0.01em;
@@ -117,9 +231,8 @@ small, .text-sm { font-size: var(--fs-sm); }
 button, input, textarea, select { font-family: inherit; font-size: inherit; }
 
 :focus-visible {
-  outline: 3px solid var(--france-blue);
+  outline: 2px solid #0a76f6;
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -132,6 +245,9 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
   padding: 0 var(--sp-5);
 }
 .container-narrow { max-width: 760px; margin: 0 auto; padding: 0 var(--sp-5); }
+/* Élargi pendant la consultation (§3) pour laisser respirer le volet projet
+   permanent à côté du contenu de l'étape en cours. */
+.container-narrow.is-wide { max-width: 1080px; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -144,7 +260,7 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
-  font-family: var(--font-body); font-weight: 600; font-size: var(--fs-base);
+  font-family: var(--font-body); font-weight: 700; font-size: var(--fs-base);
   padding: 0.75rem 1.25rem; border-radius: var(--radius-sm); border: 1.5px solid transparent;
   cursor: pointer; transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease), background 0.12s var(--ease), border-color 0.12s var(--ease);
   text-decoration: none; line-height: 1.2; white-space: nowrap;
@@ -187,7 +303,7 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 0.35rem; font-size: var(--fs-xs); font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em; padding: 0.3rem 0.65rem; border-radius: var(--radius-pill);
+  text-transform: uppercase; letter-spacing: 0.04em; padding: 0.3rem 0.65rem; border-radius: var(--radius-badge);
 }
 .badge-blue { background: var(--france-blue-100); color: var(--france-blue); }
 .badge-green { background: var(--green-100); color: var(--green-700); }
@@ -201,18 +317,43 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
 @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
 /* ---------------------------------------------------------------------
+   Badge d'axe — mise en évidence forte de la catégorie/axe en cours.
+   Fond plein (couleur de l'axe), texte blanc, plus un liseré "dark" pour
+   garder du relief même en vidéoprojection sur fond clair. Le triplet de
+   couleurs par axe (--axe-*, --axe-*-dark, --axe-*-light) est défini
+   plus haut dans :root ; ce composant les consomme via une variable
+   locale --axe-color pour rester générique et pilotable en inline style.
+   --------------------------------------------------------------------- */
+.badge-axe {
+  --axe-color: var(--ink);
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.35rem 0.75rem; border-radius: var(--radius-badge);
+  background: var(--axe-color); color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 18, 0.16);
+}
+.badge-axe .badge-axe-dot {
+  width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #fff; flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------
    Formulaires
    --------------------------------------------------------------------- */
 
 .field { margin-bottom: var(--sp-4); }
-.field label { display: block; font-weight: 600; font-size: var(--fs-sm); margin-bottom: var(--sp-2); color: var(--ink); }
+.field label { display: block; font-weight: 700; font-size: var(--fs-sm); margin-bottom: var(--sp-2); color: var(--ink); }
 .field .hint { font-size: var(--fs-xs); color: var(--ink-faint); margin-top: var(--sp-1); }
 
 .input, textarea.input, select.input {
-  width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--ink); transition: border-color 0.12s var(--ease), box-shadow 0.12s var(--ease);
+  width: 100%; padding: 0.7rem 0.9rem; border: none; border-radius: 0.25rem 0.25rem 0 0;
+  background: #EEEEEE; color: var(--ink);
+  box-shadow: inset 0 -2px 0 0 var(--border-strong);
+  transition: box-shadow 0.12s var(--ease);
 }
-.input:focus { border-color: var(--france-blue); box-shadow: 0 0 0 3px var(--france-blue-100); outline: none; }
+.input:focus {
+  box-shadow: inset 0 -2px 0 0 var(--france-blue);
+  outline: 2px solid #0a76f6; outline-offset: 2px;
+}
 textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-body); }
 
 .input-code {
@@ -247,7 +388,7 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
   padding: var(--sp-3) var(--sp-5); max-width: 1080px; margin: 0 auto;
 }
 .brand { display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-display); font-weight: 700; font-size: var(--fs-md); color: var(--ink); text-decoration: none; }
-.brand .brand-mark { color: var(--brass); }
+.brand-mark { color: var(--brass); width: 1.15em; height: 1.15em; object-fit: contain; display: inline-block; vertical-align: -0.2em; }
 
 .app-main { padding: var(--sp-6) 0 var(--sp-8); }
 
@@ -263,7 +404,7 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
 .dial { display: inline-flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
 .dial svg { display: block; }
 .dial-needle { transform-origin: 100px 100px; transition: transform 0.7s var(--ease); }
-.dial-label { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-sm); text-align: center; }
+.dial-label { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); text-align: center; }
 .dial-sub { font-size: var(--fs-xs); color: var(--ink-faint); text-align: center; }
 .dial-compact .dial-label { font-size: var(--fs-xs); }
 
@@ -283,7 +424,7 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
 .vote-btn {
   flex: 1; min-width: 88px; display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
   padding: 0.55rem 0.5rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-strong);
-  background: var(--surface); cursor: pointer; font-weight: 600; font-size: var(--fs-sm); color: var(--ink-soft);
+  background: var(--surface); cursor: pointer; font-weight: 700; font-size: var(--fs-sm); color: var(--ink-soft);
   transition: all 0.12s var(--ease);
 }
 .vote-btn .count { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-faint); }
@@ -313,6 +454,17 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
   font-weight: 700; font-size: var(--fs-xs); padding: 0.15rem 0.55rem; border-radius: var(--radius-pill);
 }
 
+/* Encart carte intégré (cartes.gouv.fr) — §2.2c / §3 */
+.map-embed { display: flex; flex-direction: column; gap: var(--sp-1); }
+.map-embed iframe { background: var(--paper); }
+.map-embed-fallback { align-self: flex-end; color: var(--ink-soft); }
+.map-embed-fallback:hover { color: var(--france-blue); }
+/* Si l'iframe échoue à charger (blocage X-Frame-Options par ex.), on la
+   masque et on ne garde que le lien plein écran, plutôt qu'un cadre vide. */
+.map-embed-error iframe { display: none; }
+.map-embed-error .map-embed-fallback { align-self: stretch; text-align: center; padding: var(--sp-3); border: 1px dashed var(--border-strong); border-radius: 8px; }
+
+
 /* ---------------------------------------------------------------------
    Cotation (FAVORABLE / NEUTRE / DEFAVORABLE)
    --------------------------------------------------------------------- */
@@ -321,17 +473,17 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
 .cotation-btn {
   display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-5) var(--sp-3);
   border-radius: var(--radius); border: 2px solid var(--border-strong); background: var(--surface); cursor: pointer;
-  transition: all 0.15s var(--ease); font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base); color: var(--ink);
+  transition: all 0.15s var(--ease); font-family: var(--font-display); font-weight: 700; font-size: var(--fs-base); color: var(--ink);
 }
 .cotation-btn .ico { font-size: var(--fs-2xl); }
 .cotation-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.cotation-btn.favorable.active { background: var(--green-100); border-color: var(--green); color: var(--green-700); }
-.cotation-btn.neutre.active { background: #ECEAE3; border-color: var(--neutral-pass); color: var(--ink-soft); }
-.cotation-btn.defavorable.active { background: var(--red-100); border-color: var(--red); color: var(--red-700); }
+.cotation-btn.favorable.active { background: color-mix(in srgb, var(--cotation-favorable) 14%, var(--surface)); border-color: var(--cotation-favorable); color: var(--cotation-favorable); }
+.cotation-btn.neutre.active { background: #ECEAE3; border-color: var(--cotation-neutre); color: var(--ink-soft); }
+.cotation-btn.defavorable.active { background: color-mix(in srgb, var(--cotation-defavorable) 14%, var(--surface)); border-color: var(--cotation-defavorable); color: var(--cotation-defavorable); }
 
 /* Barre de résultats (utilisée pour cotation + classement projets) */
 .result-row { display: grid; grid-template-columns: 140px 1fr auto; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
-.result-row .label { font-weight: 600; font-size: var(--fs-sm); }
+.result-row .label { font-weight: 700; font-size: var(--fs-sm); }
 .result-row .bar-track { height: 14px; background: var(--border); border-radius: var(--radius-pill); overflow: hidden; }
 .result-row .bar-fill { height: 100%; border-radius: var(--radius-pill); transition: width 0.5s var(--ease); }
 .result-row .pct { font-family: var(--font-mono); font-weight: 600; font-size: var(--fs-sm); min-width: 3.4rem; text-align: right; }
@@ -349,9 +501,29 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* -- Minuteur par étape (§5.1) --------------------------------------- */
+.step-timer-slot:empty { display: none; }
+.step-timer {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  font-family: var(--font-display); font-variant-numeric: tabular-nums;
+  padding: var(--sp-1) var(--sp-3); border-radius: var(--radius-pill);
+  background: var(--france-blue-100); color: var(--france-blue);
+  font-weight: 700; font-size: var(--fs-md); line-height: 1.2; width: fit-content;
+}
+.step-timer-compact { font-size: var(--fs-sm); padding: 2px var(--sp-2); }
+.step-timer-ico { font-size: 0.9em; }
+.step-timer.step-timer-warning { background: var(--red-100); color: var(--red-700); animation: step-timer-blink 1s ease-in-out infinite; }
+.step-timer.step-timer-elapsed { background: var(--red-700); color: #fff; animation: none; }
+@keyframes step-timer-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+.stepper-help-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }
+.stepper-help-row .stepper-help { margin: 0; }
+
+.duration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sp-4); align-items: end; margin-top: var(--sp-3); }
+
 .toast-stack { position: fixed; bottom: var(--sp-5); left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: var(--sp-2); width: min(420px, 92vw); }
 .toast {
-  padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); font-size: var(--fs-sm); font-weight: 600;
+  padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); font-size: var(--fs-sm); font-weight: 700;
   box-shadow: var(--shadow-lg); animation: toast-in 0.25s var(--ease);
 }
 .toast-error { background: var(--red-700); color: #fff; }
@@ -369,3 +541,16 @@ textarea.input { resize: vertical; min-height: 5rem; font-family: var(--font-bod
   .cotation-grid { grid-template-columns: 1fr; }
   .result-row { grid-template-columns: 90px 1fr auto; }
 }
+
+/* ---------------------------------------------------------------------
+   Pied de page légal (DSFR) — mentions légales / accessibilité / données
+   personnelles, présent sur toutes les pages sauf l'écran de projection
+   (voir règle .projector-body dans pages.css).
+   --------------------------------------------------------------------- */
+.fr-footer-legal {
+  border-top: 1px solid var(--border); padding: var(--sp-4) var(--sp-5);
+  text-align: center; background: var(--paper);
+}
+.fr-footer-legal nav { display: flex; justify-content: center; gap: var(--sp-4); flex-wrap: wrap; }
+.fr-footer-legal a { color: var(--ink-soft); font-size: var(--fs-sm); text-decoration: underline; }
+.fr-footer-legal a:hover { color: var(--france-blue); }

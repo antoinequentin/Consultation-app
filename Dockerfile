@@ -40,8 +40,10 @@ COPY app ./app
 
 # Utilisateur non-root (bonne pratique, et requis par de nombreuses
 # politiques de sécurité Kubernetes, dont celles de SSPCloud).
+# data/uploads : destination des images uploadées par les participants
+# (§2/§7), à ne pas confondre avec app/static/uploads — voir app/storage.py.
 RUN useradd --create-home --uid 1000 appuser && \
-    mkdir -p /app/data/exports && \
+    mkdir -p /app/data/exports /app/data/uploads && \
     chown -R appuser:appuser /app
 USER appuser
 

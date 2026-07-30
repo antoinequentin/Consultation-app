@@ -19,6 +19,7 @@ projet fixe) :
 """
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
@@ -27,6 +28,82 @@ from app import crud, models, utils
 from app.models import ConsultationStep, PropositionStatus, WebinarPhase
 
 MAX_PROJECTS_PER_PARTICIPANT = 3
+
+# Minuteur par étape (§5.1) — associe chaque étape de consultation au champ
+# de durée correspondant sur `Webinar`. Une durée à None signifie "pas de
+# minuteur pour cette étape" (comportement par défaut, opt-in par l'animateur).
+STEP_DURATION_FIELD = {
+    ConsultationStep.POSITIFS: "step_duration_positifs",
+    ConsultationStep.NEGATIFS: "step_duration_negatifs",
+    ConsultationStep.VOTE: "step_duration_vote",
+    ConsultationStep.AMELIORATIONS: "step_duration_ameliorations",
+}
+
+
+def _step_duration_seconds(webinar: models.Webinar, step: int) -> int | None:
+    try:
+        field = STEP_DURATION_FIELD.get(ConsultationStep(step))
+    except ValueError:
+        return None
+    return getattr(webinar, field) if field else None
+
+
+def _iso_utc(value: dt.datetime | None) -> str | None:
+    """Sérialise un datetime pour le JSON envoyé au client, en garantissant
+    TOUJOURS un suffixe de fuseau explicite (`+00:00`), même si `value` est
+    naive (ce qui arrive systématiquement après relecture depuis SQLite,
+    qui ne persiste pas le tzinfo — cf. `_touch_step_timer` plus haut pour
+    le même problème côté comparaison serveur).
+
+    Sans ce garde-fou, `datetime.isoformat()` sur un datetime naive ne
+    produit AUCUN suffixe de fuseau (ex: "2026-07-29T09:26:43"), que
+    `new Date(...)` côté navigateur interprète alors comme une heure
+    LOCALE plutôt qu'UTC. Pour un participant à Paris (UTC+2 en été),
+    ça décale le calcul du minuteur de 2h vers le passé : le compte à
+    rebours affiche aussitôt 0:00, comme si l'étape avait déjà débordé
+    dès son lancement — c'est le bug "le minuteur ne défile pas",
+    puisqu'il est en réalité déjà à zéro dès le premier rendu."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt.timezone.utc)
+    return value.isoformat()
+
+
+def _touch_step_timer(webinar: models.Webinar, db: Session | None = None, *, log_previous: bool = True) -> None:
+    """Réinitialise le point de départ du minuteur : à appeler à chaque
+    changement d'étape, d'axe, ou de sélection de projet (tout ce qui rend
+    le compte à rebours précédent obsolète).
+
+    Si `db` est fourni et `log_previous` est vrai, journalise d'abord le
+    temps réellement passé sur l'étape qui se termine (§7.5) — ignoré si
+    aucune étape de consultation n'était en cours (`step == NONE`) ou si
+    `step_started_at` n'était pas encore posé (tout premier changement)."""
+    now = models.utcnow()
+    if (
+        log_previous
+        and db is not None
+        and webinar.step_started_at is not None
+        and webinar.current_step != ConsultationStep.NONE.value
+    ):
+        planned = _step_duration_seconds(webinar, webinar.current_step)
+        started = webinar.step_started_at
+        # SQLite ne persiste pas le tzinfo : après relecture, `started` peut
+        # redevenir naive même si `utcnow()` produit un datetime aware.
+        # On aligne les deux en aware-UTC avant de soustraire.
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=dt.timezone.utc)
+        db.add(models.StepTimingLog(
+            webinar_id=webinar.id,
+            project_id=webinar.current_project_id,
+            axis_index=webinar.current_axis_index,
+            step=webinar.current_step,
+            started_at=webinar.step_started_at,
+            ended_at=now,
+            duration_seconds=max(0, int((now - started).total_seconds())),
+            planned_duration_seconds=planned,
+        ))
+    webinar.step_started_at = now
 
 
 class StateError(Exception):
@@ -45,6 +122,11 @@ def _project_public(p: models.Project, *, votes: int | None, participant_id: str
         "description": p.description,
         "context": p.context,
         "image_url": p.image_url,
+        "map_url": p.map_url,
+        "porteur": p.porteur,
+        "budget": p.budget,
+        "territoire": p.territoire,
+        "stade": p.stade,
         "proposed_by_name": p.proposed_by_name,
         "status": p.status,
         "votes": votes,
@@ -180,7 +262,16 @@ def build_state(db: Session, webinar: models.Webinar, *, participant_id: str | N
         consultation: dict = {
             "project": {
                 "id": project.id, "title": project.title, "description": project.description,
-                "context": project.context, "image_url": project.image_url,
+                "context": project.context, "image_url": project.image_url, "map_url": project.map_url,
+                "porteur": project.porteur, "budget": project.budget,
+                "territoire": project.territoire, "stade": project.stade,
+                "proposed_by_name": project.proposed_by_name,
+                # Conflit d'intérêt (§7) : signale au participant que le
+                # projet actuellement en consultation est celui qu'il a
+                # lui-même proposé — jamais calculé pour l'animateur/écran
+                # de projection (participant_id est None dans ces cas), qui
+                # n'ont pas à connaître l'identité des participants.
+                "is_mine": bool(participant_id) and project.proposed_by == participant_id,
             } if project else None,
             "axis_index": webinar.current_axis_index,
             "axis_count": len(axes),
@@ -190,6 +281,18 @@ def build_state(db: Session, webinar: models.Webinar, *, participant_id: str | N
             } if axis else None,
             "step": webinar.current_step,
             "step_label": utils.step_name(webinar.current_step),
+            # Minuteur (§5.1) : le client calcule lui-même le compte à
+            # rebours à partir de ces deux valeurs (step_started_at +
+            # step_duration_seconds), plutôt que de recevoir un "temps
+            # restant" déjà calculé qui se périmerait entre deux diffusions.
+            "step_started_at": _iso_utc(webinar.step_started_at),
+            "step_duration_seconds": _step_duration_seconds(webinar, webinar.current_step),
+            "step_durations": {
+                "positifs": webinar.step_duration_positifs,
+                "negatifs": webinar.step_duration_negatifs,
+                "vote": webinar.step_duration_vote,
+                "ameliorations": webinar.step_duration_ameliorations,
+            },
         }
 
         if axis is not None:
@@ -244,7 +347,7 @@ def build_you(db: Session, webinar: models.Webinar, *, participant_id: str | Non
 # Actions PARTICIPANT
 # --------------------------------------------------------------------------
 
-def submit_project(db: Session, webinar: models.Webinar, participant_id: str, display_name: str | None, *, title: str, description: str, context: str, image_url: str | None) -> models.Project:
+def submit_project(db: Session, webinar: models.Webinar, participant_id: str, display_name: str | None, *, title: str, description: str, context: str, image_url: str | None, map_url: str | None = None, porteur: str | None = None, budget: str | None = None, territoire: str | None = None, stade: str | None = None) -> models.Project:
     if webinar.phase != WebinarPhase.PROJECT_SUBMISSION.value:
         raise StateError("La proposition de projets n'est pas (ou plus) ouverte.")
     if not webinar.allow_project_proposals:
@@ -253,7 +356,8 @@ def submit_project(db: Session, webinar: models.Webinar, participant_id: str, di
         raise StateError(f"Vous avez atteint la limite de {MAX_PROJECTS_PER_PARTICIPANT} projets proposés.")
     return crud.create_project(
         db, webinar_id=webinar.id, title=title, description=description, context=context,
-        image_url=image_url, proposed_by=participant_id, proposed_by_name=display_name,
+        image_url=image_url, map_url=map_url, porteur=porteur, budget=budget, territoire=territoire, stade=stade,
+        proposed_by=participant_id, proposed_by_name=display_name,
     )
 
 
@@ -383,6 +487,7 @@ def _h_select_project(db, webinar, payload):
         for categorie, texte in utils.BTE_DEFAULT_AXES:
             crud.add_axis(db, project_id=project.id, texte=texte, categorie=categorie)
 
+    _touch_step_timer(webinar, db)  # current_step est encore NONE ici : pas de log
     webinar.current_project_id = project.id
     webinar.current_axis_index = 0
     webinar.current_step = ConsultationStep.POSITIFS.value
@@ -397,6 +502,7 @@ def _h_set_step(db, webinar, payload):
         raise StateError("La consultation n'est pas en cours.")
     if step not in (1, 2, 3, 4):
         raise StateError("Étape invalide.")
+    _touch_step_timer(webinar, db)
     webinar.current_step = step
     db.commit()
     return HostActionResult(f"Étape : {utils.step_name(step)}")
@@ -411,6 +517,7 @@ def _h_change_axis(db, webinar, payload, delta: int):
     new_index = webinar.current_axis_index + delta
     if new_index < 0 or new_index >= len(axes):
         raise StateError("Pas d'axe supplémentaire dans cette direction.")
+    _touch_step_timer(webinar, db)
     webinar.current_axis_index = new_index
     webinar.current_step = ConsultationStep.POSITIFS.value
     db.commit()
@@ -514,6 +621,50 @@ def _h_set_allow_project_proposals(db, webinar, payload):
     return HostActionResult(f"Proposition de projets {state}.")
 
 
+# Durée min/max raisonnable pour un minuteur d'étape (10s à 2h) — garde-fou
+# contre une saisie erronée plutôt qu'une vraie contrainte métier.
+_MIN_STEP_DURATION = 10
+_MAX_STEP_DURATION = 7200
+
+
+def _parse_duration(raw) -> int | None:
+    """None/'' → pas de minuteur pour cette étape. Sinon, entier de
+    secondes validé dans une plage raisonnable."""
+    if raw is None or raw == "":
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise StateError("Durée invalide : doit être un nombre de secondes.")
+    if value < _MIN_STEP_DURATION or value > _MAX_STEP_DURATION:
+        raise StateError(f"Durée invalide : entre {_MIN_STEP_DURATION} et {_MAX_STEP_DURATION} secondes.")
+    return value
+
+
+def _h_set_step_durations(db, webinar, payload):
+    """Configure les 4 durées de minuteur indépendamment (§5.1) — un champ
+    absent du payload laisse la valeur actuelle inchangée, une valeur
+    explicitement null/vide désactive le minuteur pour cette étape."""
+    fields = {
+        "positifs": "step_duration_positifs",
+        "negatifs": "step_duration_negatifs",
+        "vote": "step_duration_vote",
+        "ameliorations": "step_duration_ameliorations",
+    }
+    for key, attr in fields.items():
+        if key in payload:
+            setattr(webinar, attr, _parse_duration(payload.get(key)))
+    # Le minuteur en cours (s'il y en a un) repart avec la nouvelle durée,
+    # pour que le changement soit immédiatement visible plutôt que d'attendre
+    # le prochain changement d'étape. On ne journalise PAS ici (log_previous=
+    # False) : l'étape elle-même ne change pas, seul son décompte redémarre —
+    # journaliser créerait une entrée d'historique artificielle pour une
+    # étape qui n'est pas terminée.
+    _touch_step_timer(webinar, db, log_previous=False)
+    db.commit()
+    return HostActionResult("Durées des minuteurs mises à jour.")
+
+
 _HOST_ACTIONS = {
     "start_project_submission": _h_start_project_submission,
     "close_submission_open_vote": _h_close_submission_open_vote,
@@ -534,4 +685,5 @@ _HOST_ACTIONS = {
     "reject_proposition": lambda db, w, p: _h_set_proposition_status(db, w, p, PropositionStatus.REJECTED.value),
     "set_moderation": _h_set_moderation,
     "set_allow_project_proposals": _h_set_allow_project_proposals,
+    "set_step_durations": _h_set_step_durations,
 }

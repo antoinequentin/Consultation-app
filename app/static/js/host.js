@@ -14,6 +14,8 @@
 
   let ws = null;
   let state = null;
+  let stopOverviewTimer = () => {};
+  let stopConsultationTimer = () => {};
 
   // -- Authentification -----------------------------------------------------
 
@@ -73,15 +75,82 @@
   if (existingToken) tryConnectWithToken(existingToken);
 
   // -- Navigation entre panneaux ---------------------------------------------
+  // §5.3 : la nav reflète où en est le webinaire — badge "en cours" sur
+  // l'onglet correspondant à la phase active, et onglets non pertinents
+  // grisés/désactivés (ex: "Consultation" tant qu'aucun projet n'est
+  // sélectionné, "Modération" hors phase de consultation). "Vue d'ensemble"
+  // et "Paramètres" restent toujours accessibles : ce sont des panneaux de
+  // pilotage/config, jamais liés à une phase précise.
+
+  function selectPanel(panelName) {
+    Boussole.qsa("#host-nav button").forEach((b) => b.classList.toggle("active", b.dataset.panel === panelName));
+    Boussole.qsa(".host-panel").forEach((p) => p.classList.toggle("active", p.id === `panel-${panelName}`));
+  }
 
   Boussole.qsa("#host-nav button").forEach((btn) => {
     btn.addEventListener("click", () => {
-      Boussole.qsa("#host-nav button").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      Boussole.qsa(".host-panel").forEach((p) => p.classList.remove("active"));
-      document.getElementById(`panel-${btn.dataset.panel}`).classList.add("active");
+      if (btn.disabled) return;
+      selectPanel(btn.dataset.panel);
     });
   });
+
+  function currentActivePanel() {
+    const active = Boussole.qs("#host-nav button.active");
+    return active ? active.dataset.panel : "overview";
+  }
+
+  // Détermine, pour l'état courant, quel onglet correspond à la phase en
+  // cours (badge "en cours") et quels onglets n'ont rien à montrer pour le
+  // moment (désactivés). Centralisé ici plutôt que dispersé dans chaque
+  // fonction de rendu, pour garder une seule source de vérité sur "où en
+  // est le webinaire".
+  function navRelevance(s) {
+    const phase = s.webinar.phase;
+    const hasConsultation = !!(s.consultation && s.consultation.project);
+    const hasPropositionsStep = !!(s.consultation && s.consultation.propositions);
+    const pendingCount = hasPropositionsStep
+      ? s.consultation.propositions.filter((p) => p.status === "pending").length
+      : 0;
+
+    return {
+      overview: { current: false, disabled: false },
+      projects: {
+        current: phase === "project_submission" || phase === "project_vote",
+        disabled: phase === "lobby",
+      },
+      consultation: {
+        current: phase === "consultation",
+        disabled: !hasConsultation,
+      },
+      moderation: {
+        current: pendingCount > 0,
+        disabled: !hasPropositionsStep,
+      },
+      settings: { current: false, disabled: false },
+    };
+  }
+
+  function updateNav(s) {
+    const relevance = navRelevance(s);
+    let activePanel = currentActivePanel();
+    let switched = false;
+
+    Boussole.qsa("#host-nav button").forEach((btn) => {
+      const panel = btn.dataset.panel;
+      const r = relevance[panel] || { current: false, disabled: false };
+      btn.disabled = r.disabled;
+      btn.classList.toggle("nav-current", r.current);
+      const badgeEl = btn.querySelector("[data-badge]");
+      if (badgeEl) badgeEl.textContent = r.current ? "En cours" : "";
+      // Si l'onglet actuellement affiché vient de devenir non pertinent
+      // (ex: l'animateur a réinitialisé le webinaire pendant qu'on était
+      // sur "Consultation"), on retombe sur "Vue d'ensemble" plutôt que de
+      // laisser un panneau grisé et vide à l'écran.
+      if (panel === activePanel && r.disabled) switched = true;
+    });
+
+    if (switched) selectPanel("overview");
+  }
 
   // -- QR / export -----------------------------------------------------------
 
@@ -100,6 +169,12 @@
     window.open(`/api/webinars/${code}/export.zip?token=${encodeURIComponent(token)}`, "_blank");
   });
 
+  document.getElementById("export-pdf-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    const token = Boussole.getHostToken(code);
+    window.open(`/api/webinars/${code}/export.pdf?token=${encodeURIComponent(token)}`, "_blank");
+  });
+
   function hostAction(action, extra = {}) {
     ws.send("host_action", { action, ...extra });
   }
@@ -111,6 +186,7 @@
     state = s;
     phaseLabel.textContent = s.webinar.phase_label;
     presenceBadge.innerHTML = `<span class="badge-dot"></span> ${s.participant_count} en ligne`;
+    updateNav(s);
     renderOverview(s);
     renderProjects(s);
     renderConsultation(s);
@@ -159,18 +235,13 @@
         </div>`;
     } else if (phase === "consultation") {
       const c = s.consultation;
-      const stepNames = { 1: "Impacts positifs", 2: "Impacts négatifs", 3: "Vote (cotation)", 4: "Améliorations" };
       actionBlock = `
         <div class="card">
           <h2 style="margin-top:0;">${Boussole.escapeHtml(c.project.title)}</h2>
           <p class="text-sm text-soft">${c.axis_count > 1 ? `Axe ${c.axis_index + 1} / ${c.axis_count} — ` : ""}${Boussole.escapeHtml(c.axis ? c.axis.texte : "")}</p>
           ${c.axis ? Boussole.categoryBadge(c.axis.categorie, c.axis.color) : ""}
+          ${Boussole.consultationStepper(c)}
           <div class="host-actions-row">
-            ${[1, 2, 3, 4].map((st) => `<button class="btn ${c.step === st ? "btn-primary" : "btn-outline"} btn-sm" onclick="__hostAction('set_step',{step:${st}})">${st}. ${stepNames[st]}</button>`).join("")}
-          </div>
-          <div class="host-actions-row">
-            <button class="btn btn-ghost btn-sm" ${c.axis_index <= 0 ? "disabled" : ""} onclick="__hostAction('prev_axis')">← Axe précédent</button>
-            <button class="btn btn-ghost btn-sm" ${c.axis_index >= c.axis_count - 1 ? "disabled" : ""} onclick="__hostAction('next_axis')">Axe suivant →</button>
             <button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="if(confirm('Terminer le webinaire ? Les résultats finaux seront affichés à tous.')) __hostAction('end_consultation')">Terminer le webinaire</button>
           </div>
         </div>`;
@@ -194,6 +265,9 @@
       ${actionBlock}
     `;
     Boussole.renderDial(document.getElementById("overview-dial"), s.webinar.phase, s.consultation ? s.consultation.step : 0, { compact: true, showLabel: false });
+    stopOverviewTimer();
+    const overviewTimerEl = Boussole.qs("[data-step-timer-host]", el);
+    stopOverviewTimer = overviewTimerEl ? Boussole.mountStepTimer(overviewTimerEl, s.consultation) : () => {};
   }
 
   // -- PROJETS ------------------------------------------------------------
@@ -221,7 +295,109 @@
             <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="if(confirm('Supprimer ce projet proposé ?')) __hostAction('delete_project',{project_id:${p.id}})">Supprimer</button>
           </div>
         </div>`).join("") || '<p class="text-soft">Aucun projet proposé pour le moment.</p>'}
+
+      <div class="section-head" style="margin-top:var(--sp-5);"><h2>Projet type — réutiliser un projet existant</h2></div>
+      <div class="card">
+        <p class="text-sm text-soft" style="margin-top:0;">
+          Vous animez régulièrement des ateliers ? Récupérez un projet déjà utilisé dans un autre webinaire (dont vous connaissez le code et le mot de passe) sans ressaisir ses informations.
+        </p>
+        <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap;align-items:flex-end;">
+          <div class="field" style="flex:1;min-width:120px;">
+            <label for="dup-src-code">Code du webinaire source</label>
+            <input class="input" id="dup-src-code" maxlength="12" placeholder="Ex. AB12CD" style="text-transform:uppercase;">
+          </div>
+          <div class="field" style="flex:1;min-width:120px;">
+            <label for="dup-src-pass">Mot de passe animateur de ce webinaire</label>
+            <input class="input" id="dup-src-pass" type="password" placeholder="••••••••">
+          </div>
+          <button class="btn btn-outline" id="dup-load-btn" type="button">Charger les projets</button>
+        </div>
+        <p class="text-xs" id="dup-feedback" style="margin:var(--sp-2) 0 0;"></p>
+        <div id="dup-results" style="margin-top:var(--sp-3);"></div>
+      </div>
     `;
+    if (!el.__dupWired) {
+      el.__dupWired = true;
+      el.addEventListener("click", async (e) => {
+        if (e.target.id === "dup-load-btn") {
+          await loadDuplicableProjects();
+        } else if (e.target.closest(".dup-btn")) {
+          const btn = e.target.closest(".dup-btn");
+          await duplicateProjectHere(parseInt(btn.dataset.id, 10), btn.dataset.title);
+        }
+      });
+    }
+  }
+
+  async function loadDuplicableProjects() {
+    const feedback = document.getElementById("dup-feedback");
+    const resultsEl = document.getElementById("dup-results");
+    const srcCode = document.getElementById("dup-src-code").value.trim().toUpperCase();
+    const srcPass = document.getElementById("dup-src-pass").value;
+    if (!srcCode || !srcPass) {
+      feedback.textContent = "Renseignez le code et le mot de passe du webinaire source.";
+      return;
+    }
+    feedback.textContent = "Connexion…";
+    resultsEl.innerHTML = "";
+    try {
+      const loginRes = await fetch(`/api/webinars/${encodeURIComponent(srcCode)}/host/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: srcPass }),
+      });
+      if (!loginRes.ok) {
+        feedback.textContent = "Code ou mot de passe incorrect pour ce webinaire.";
+        return;
+      }
+      const { token: srcToken } = await loginRes.json();
+      const listRes = await fetch(`/api/webinars/${encodeURIComponent(srcCode)}/projects/duplicable?token=${encodeURIComponent(srcToken)}`);
+      if (!listRes.ok) {
+        feedback.textContent = "Impossible de récupérer les projets de ce webinaire.";
+        return;
+      }
+      const data = await listRes.json();
+      if (!data.projects.length) {
+        feedback.textContent = `Aucun projet dans « ${data.webinar.title} ».`;
+        return;
+      }
+      feedback.textContent = `${data.projects.length} projet(s) trouvé(s) dans « ${data.webinar.title} ».`;
+      resultsEl.innerHTML = data.projects.map((p) => `
+        <div class="mod-row">
+          <div class="txt">
+            <strong>${Boussole.escapeHtml(p.title)}</strong><br>
+            <span class="text-sm text-soft">${Boussole.escapeHtml(p.description || "")}</span>
+          </div>
+          <button class="btn btn-primary btn-sm dup-btn" data-id="${p.id}" data-title="${Boussole.escapeHtml(p.title)}">Dupliquer ici</button>
+        </div>`).join("");
+    } catch (err) {
+      feedback.textContent = "Erreur de connexion, veuillez réessayer.";
+    }
+  }
+
+  async function duplicateProjectHere(sourceProjectId, title) {
+    const feedback = document.getElementById("dup-feedback");
+    const token = Boussole.getHostToken(code);
+    feedback.textContent = "Duplication en cours…";
+    try {
+      const res = await fetch(`/api/webinars/${encodeURIComponent(code)}/projects/duplicate?token=${encodeURIComponent(token)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_project_id: sourceProjectId }),
+      });
+      if (!res.ok) {
+        feedback.textContent = "Échec de la duplication.";
+        return;
+      }
+      Boussole.toast(`« ${title} » ajouté à ce webinaire.`, "success");
+      feedback.textContent = "";
+      // Le projet dupliqué apparaîtra dans la liste au prochain état diffusé
+      // (broadcast déclenché côté serveur par la prochaine action, ou état
+      // déjà à jour si une diffusion a eu lieu entre-temps) ; pas besoin de
+      // rafraîchir manuellement ici.
+    } catch (err) {
+      feedback.textContent = "Erreur de connexion, veuillez réessayer.";
+    }
   }
 
   // -- CONSULTATION ---------------------------------------------------------
@@ -242,7 +418,7 @@
           ${["FAVORABLE", "NEUTRE", "DEFAVORABLE"].map((k) => `
             <div class="result-row">
               <div class="label">${k}</div>
-              <div class="bar-track"><div class="bar-fill" style="width:${cot.percentages[k] || 0}%;background:${k === "FAVORABLE" ? "var(--green)" : k === "DEFAVORABLE" ? "var(--red)" : "var(--neutral-pass)"};"></div></div>
+              <div class="bar-track"><div class="bar-fill" style="width:${cot.percentages[k] || 0}%;background:${k === "FAVORABLE" ? "var(--cotation-favorable)" : k === "DEFAVORABLE" ? "var(--cotation-defavorable)" : "var(--cotation-neutre)"};"></div></div>
               <div class="pct">${Boussole.fmtPct(cot.percentages[k] || 0)} · ${cot.counts[k] || 0}</div>
             </div>`).join("")}
           <button class="btn btn-outline btn-sm" onclick="if(confirm('Réinitialiser tous les votes de cotation pour cet axe ?')) __hostAction('reset_cotation')">Réinitialiser les votes</button>
@@ -270,6 +446,7 @@
         ${c.axis_count > 1 ? `<p class="text-sm text-soft">Axe ${c.axis_index + 1} / ${c.axis_count}</p>` : ""}
         ${c.axis ? Boussole.categoryBadge(c.axis.categorie, c.axis.color) : ""}
         <p style="margin:var(--sp-2) 0 0;">${Boussole.escapeHtml(c.axis ? c.axis.texte : "")}</p>
+        ${Boussole.consultationStepper(c)}
       </div>
       ${body}
       <div class="card" style="margin-top:var(--sp-5);">
@@ -287,6 +464,9 @@
       hostAction("add_axis", { texte: input.value.trim() });
       input.value = "";
     });
+    stopConsultationTimer();
+    const consultationTimerEl = Boussole.qs("[data-step-timer-host]", el);
+    stopConsultationTimer = consultationTimerEl ? Boussole.mountStepTimer(consultationTimerEl, c) : () => {};
   }
 
   // -- MODÉRATION -----------------------------------------------------------
@@ -313,8 +493,16 @@
 
   // -- PARAMÈTRES -------------------------------------------------------------
 
+  const STEP_DURATION_FIELDS = [
+    { key: "positifs", label: "Impacts positifs" },
+    { key: "negatifs", label: "Impacts négatifs" },
+    { key: "vote", label: "Vote" },
+    { key: "ameliorations", label: "Améliorations" },
+  ];
+
   function renderSettings(s) {
     const el = document.getElementById("panel-settings");
+    const durations = (s.consultation && s.consultation.step_durations) || {};
     el.innerHTML = `
       <div class="card" style="margin-bottom:var(--sp-5);">
         <div class="switch-row">
@@ -326,6 +514,18 @@
           <label class="switch"><input type="checkbox" id="set-allow-projects" ${s.webinar.allow_project_proposals ? "checked" : ""}><span class="track"></span></label>
         </div>
       </div>
+      <div class="card" style="margin-bottom:var(--sp-5);">
+        <h3 style="margin-top:0;">Minuteur par étape</h3>
+        <p class="text-sm text-soft">Réglez une durée (en minutes) pour chaque étape de la consultation. Le compte à rebours est visible de tous (animateur, participants, écran de projection) et s'affiche en rouge dans les 30 dernières secondes. Laissez vide pour désactiver le minuteur sur une étape.</p>
+        <form id="durations-form" class="duration-grid">
+          ${STEP_DURATION_FIELDS.map((f) => `
+            <div class="field" style="margin-bottom:0;">
+              <label for="dur-${f.key}">${f.label}</label>
+              <input class="input" id="dur-${f.key}" type="number" min="1" max="120" step="0.5" placeholder="Illimité" value="${durations[f.key] ? (durations[f.key] / 60) : ""}">
+            </div>`).join("")}
+          <button class="btn btn-outline" type="submit" style="grid-column:1/-1;">Appliquer les durées</button>
+        </form>
+      </div>
       <div class="card" style="border-color:var(--red);">
         <h3 style="margin-top:0;color:var(--red-700);">Zone sensible</h3>
         <p>Réinitialiser ramène le webinaire à l'écran d'accueil. Les données déjà collectées (projets, contributions, votes) sont conservées et restent exportables.</p>
@@ -334,6 +534,15 @@
     `;
     document.getElementById("set-moderation").addEventListener("change", (e) => hostAction("set_moderation", { enabled: e.target.checked }));
     document.getElementById("set-allow-projects").addEventListener("change", (e) => hostAction("set_allow_project_proposals", { enabled: e.target.checked }));
+    document.getElementById("durations-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const payload = {};
+      STEP_DURATION_FIELDS.forEach((f) => {
+        const raw = document.getElementById(`dur-${f.key}`).value.trim();
+        payload[f.key] = raw === "" ? null : Math.round(parseFloat(raw) * 60);
+      });
+      hostAction("set_step_durations", payload);
+    });
   }
 
   // -- Colonne latérale (stats) ----------------------------------------------

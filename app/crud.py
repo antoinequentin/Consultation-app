@@ -91,6 +91,102 @@ def count_participants(db: Session, webinar_id: int) -> int:
 
 
 # --------------------------------------------------------------------------
+# Droit à l'effacement (RGPD, §7)
+# --------------------------------------------------------------------------
+#
+# Deux comportements distincts, proposés au participant lui-même (pas
+# seulement à l'animateur) :
+#
+# - anonymize_participant : supprime toute donnée directement identifiante
+#   (display_name) mais conserve le contenu déjà partagé avec le groupe
+#   (impacts positifs/négatifs/améliorations proposés, cotations, votes),
+#   en le détachant du participant. C'est le comportement recommandé par
+#   défaut : le contenu collectif produit pendant l'atelier a une valeur
+#   pour la restitution, alors que rien dedans n'identifie la personne
+#   une fois le lien avec son participant_id supprimé.
+# - erase_participant : effacement total, y compris le contenu produit
+#   (cascade DB existante sur participant_id). Option plus radicale, pour
+#   un participant qui souhaite qu'aucune trace de sa participation ne
+#   subsiste, y compris ses contributions textuelles.
+#
+# Dans les deux cas, les projets proposés par le participant (Project.
+# proposed_by) ne sont PAS supprimés : la colonne est en ondelete="SET
+# NULL", le projet reste visible pour le groupe (il a pu être sélectionné
+# et faire l'objet de toute une consultation), seul le lien vers son
+# auteur disparaît.
+
+ANONYMOUS_DISPLAY_NAME = "Participant anonymisé"
+
+
+def anonymize_participant(db: Session, participant: models.Participant) -> None:
+    """Retire les données directement identifiantes du participant tout en
+    conservant ses contributions déjà partagées avec le groupe."""
+    participant.display_name = None
+    # Les projets qu'il a proposés perdent leur nom d'affichage identifiant
+    # (le lien proposed_by lui-même partira tout seul via SET NULL une fois
+    # le participant supprimé de la table).
+    projects = db.scalars(
+        select(models.Project).where(models.Project.proposed_by == participant.id)
+    )
+    for p in projects:
+        p.proposed_by_name = ANONYMOUS_DISPLAY_NAME
+    # On supprime la ligne Participant elle-même : c'est elle qui porte le
+    # display_name et le lien d'identité. Les Proposition/PropositionVote/
+    # CotationResponse/ProjectVote qui référencent participant_id seraient
+    # en CASCADE — pour les CONSERVER malgré tout (contrairement à
+    # erase_participant), on les détache d'abord vers un participant
+    # "fantôme" dédié à ce webinaire, créé au besoin.
+    ghost = _get_or_create_ghost_participant(db, webinar_id=participant.webinar_id)
+    db.query(models.Proposition).filter(
+        models.Proposition.participant_id == participant.id
+    ).update({"participant_id": ghost.id})
+    db.query(models.PropositionVote).filter(
+        models.PropositionVote.participant_id == participant.id
+    ).update({"participant_id": ghost.id})
+    db.query(models.CotationResponse).filter(
+        models.CotationResponse.participant_id == participant.id
+    ).update({"participant_id": ghost.id})
+    db.query(models.ProjectVote).filter(
+        models.ProjectVote.participant_id == participant.id
+    ).update({"participant_id": ghost.id})
+    db.delete(participant)
+    db.commit()
+
+
+_GHOST_ID_SUFFIX = "-anonyme"
+
+
+def _get_or_create_ghost_participant(db: Session, *, webinar_id: int) -> models.Participant:
+    """Participant fantôme unique par webinaire, destinataire de toutes les
+    contributions anonymisées de ce webinaire (évite de garder une ligne
+    Participant par personne anonymisée, ce qui recréerait un identifiant
+    traçable individuellement)."""
+    ghost_id = f"webinar-{webinar_id}{_GHOST_ID_SUFFIX}"
+    ghost = db.get(models.Participant, ghost_id)
+    if ghost is None:
+        ghost = models.Participant(
+            id=ghost_id, webinar_id=webinar_id, display_name=ANONYMOUS_DISPLAY_NAME
+        )
+        db.add(ghost)
+        db.flush()
+    return ghost
+
+
+def erase_participant(db: Session, participant: models.Participant) -> None:
+    """Effacement total : supprime le participant et, via les contraintes
+    CASCADE existantes, l'ensemble de ses contributions, votes et
+    cotations. Les projets qu'il a proposés restent (SET NULL sur
+    proposed_by), simplement détachés de son identité."""
+    projects = db.scalars(
+        select(models.Project).where(models.Project.proposed_by == participant.id)
+    )
+    for p in projects:
+        p.proposed_by_name = ANONYMOUS_DISPLAY_NAME
+    db.delete(participant)
+    db.commit()
+
+
+# --------------------------------------------------------------------------
 # Projects
 # --------------------------------------------------------------------------
 
@@ -102,6 +198,18 @@ def create_project(
     description: str = "",
     context: str = "",
     image_url: str | None = None,
+    map_url: str | None = None,
+    porteur: str | None = None,
+    budget: str | None = None,
+    territoire: str | None = None,
+    stade: str | None = None,
+    type_projet: str | None = None,
+    population: str | None = None,
+    contrainte: str | None = None,
+    enjeux: str | None = None,
+    url_boussole: str | None = None,
+    is_seed: bool = False,
+    duplicated_from_id: int | None = None,
     proposed_by: str | None = None,
     proposed_by_name: str | None = None,
     status: str = models.ProjectStatus.PROPOSED.value,
@@ -112,6 +220,18 @@ def create_project(
         description=(description or "").strip(),
         context=(context or "").strip(),
         image_url=image_url or None,
+        map_url=map_url or None,
+        porteur=(porteur or "").strip() or None,
+        budget=(budget or "").strip() or None,
+        territoire=(territoire or "").strip() or None,
+        stade=(stade or "").strip() or None,
+        type_projet=(type_projet or "").strip() or None,
+        population=(population or "").strip() or None,
+        contrainte=(contrainte or "").strip() or None,
+        enjeux=(enjeux or "").strip() or None,
+        url_boussole=(url_boussole or "").strip() or None,
+        is_seed=is_seed,
+        duplicated_from_id=duplicated_from_id,
         proposed_by=proposed_by,
         proposed_by_name=proposed_by_name,
         status=status,
@@ -120,6 +240,43 @@ def create_project(
     db.commit()
     db.refresh(project)
     return project
+
+
+def duplicate_project(
+    db: Session, *, source: models.Project, target_webinar_id: int
+) -> models.Project:
+    """Mode "projet type" (§7) : duplique un projet existant (typiquement un
+    projet de seed déjà utilisé, ou tout projet d'un webinaire précédent)
+    vers un nouveau webinaire, en réutilisant toutes ses métadonnées.
+
+    Le projet dupliqué démarre toujours au statut PROPOSED, sans lien vers
+    un auteur (`proposed_by`) : la duplication est une action animateur,
+    pas une proposition d'un participant en particulier. `duplicated_from_id`
+    garde la traçabilité vers le projet d'origine.
+    """
+    return create_project(
+        db,
+        webinar_id=target_webinar_id,
+        title=source.title,
+        description=source.description,
+        context=source.context,
+        image_url=source.image_url,
+        map_url=source.map_url,
+        porteur=source.porteur,
+        budget=source.budget,
+        territoire=source.territoire,
+        stade=source.stade,
+        type_projet=source.type_projet,
+        population=source.population,
+        contrainte=source.contrainte,
+        enjeux=source.enjeux,
+        url_boussole=source.url_boussole,
+        is_seed=False,
+        duplicated_from_id=source.id,
+        proposed_by=None,
+        proposed_by_name="Animateur (projet type)",
+        status=models.ProjectStatus.PROPOSED.value,
+    )
 
 
 def list_projects(db: Session, webinar_id: int) -> list[models.Project]:
@@ -428,3 +585,36 @@ def list_proposition_votes_for_axis(db: Session, axis_id: int) -> list[models.Pr
             .where(models.Proposition.axis_id == axis_id)
         )
     )
+
+
+def list_step_timing_logs(db: Session, webinar_id: int) -> list[models.StepTimingLog]:
+    """Historique des temps réels passés par étape de consultation (§7.5),
+    triés chronologiquement — utile pour calibrer les prochains ateliers
+    (ex: telle étape prend systématiquement plus de temps que prévu)."""
+    return list(
+        db.scalars(
+            select(models.StepTimingLog)
+            .where(models.StepTimingLog.webinar_id == webinar_id)
+            .order_by(models.StepTimingLog.started_at.asc())
+        )
+    )
+
+
+# --------------------------------------------------------------------------
+# Vue super-admin (protégée par ADMIN_SECRET, cf. routers/api.py)
+# --------------------------------------------------------------------------
+
+def list_all_webinars(db: Session) -> list[models.Webinar]:
+    """Tous les webinaires, triés du plus récent au plus ancien — utilisé
+    uniquement par la vue super-admin pour nettoyer la base en
+    développement/démo, jamais exposé aux animateurs/participants."""
+    return list(db.scalars(select(models.Webinar).order_by(models.Webinar.created_at.desc())))
+
+
+def delete_webinar(db: Session, webinar: models.Webinar) -> None:
+    """Supprime un webinaire et tout ce qui en dépend, via les contraintes
+    CASCADE déjà en place sur webinar_id (projects, participants, et
+    transitivement axes/propositions/votes/cotations qui dépendent de
+    projects/participants)."""
+    db.delete(webinar)
+    db.commit()

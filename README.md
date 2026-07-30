@@ -36,10 +36,11 @@ d'évolution futures.
 ## Démarrage local
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+cd /c/Users/antoine.quentin/Documents/boussole-consultation-app/consultation-app
+py -3.12 -m venv .venv
+.venv/Scripts/pip install -r requirements.txt
 cp .env.example .env   # puis éditez SECRET_KEY si besoin
-.venv/bin/uvicorn app.main:app --reload
+.venv/Scripts/uvicorn app.main:app --reload
 ```
 
 L'application est alors disponible sur http://localhost:8000.

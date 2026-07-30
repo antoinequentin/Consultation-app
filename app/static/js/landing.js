@@ -1,19 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Cadran d'accueil : légère animation idle qui parcourt les phases,
-  // simple clin d'œil visuel (pas de logique métier ici).
-  const heroDial = document.getElementById("hero-dial");
-  let idleIndex = 0;
-  Boussole.renderDial(heroDial, "lobby", 0, { showLabel: true, size: 240 });
-  setInterval(() => {
-    idleIndex = (idleIndex + 1) % Boussole.DIAL_LABELS.length;
-    const idx = idleIndex;
-    heroDial.querySelector(".dial-needle")?.setAttribute(
-      "transform", `rotate(${idx * (360 / Boussole.DIAL_LABELS.length)} 100 100)`
-    );
-    const label = heroDial.querySelector(".dial-label");
-    if (label) label.textContent = Boussole.DIAL_LABELS[idx];
-  }, 2600);
-
   const modal = document.getElementById("create-modal");
   document.getElementById("btn-open-create").addEventListener("click", () => modal.showModal());
   document.getElementById("btn-open-create-2").addEventListener("click", () => modal.showModal());

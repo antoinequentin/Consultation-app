@@ -12,7 +12,7 @@
         <label for="login-password" style="color:#fff;">Mot de passe</label>
         <input class="input" id="login-password" type="password" required autofocus>
       </div>
-      <button class="btn btn-brass btn-block" type="submit">Se connecter</button>
+      <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
       <p class="text-sm" id="login-error" style="color:#ff9fb6;display:none;margin-top:var(--sp-3);"></p>
     </form>
   </div>
@@ -20,18 +20,20 @@
 
 <div id="host-shell" class="host-shell" style="display:none;">
   <aside class="host-sidebar">
-    <a class="brand" href="/">◆ Boussole</a>
+    <a class="brand" href="/"><img class="brand-mark" src="/static/img/logo.png" alt=""> Boussole</a>
     <div class="webinar-code-chip" style="width:fit-content;">{{ webinar.code }}</div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2);">
+      <a class="btn btn-brass" id="open-projector" target="_blank" rel="noopener">🖥 Écran de projection</a>
+      <a class="btn btn-outline" id="open-participant" target="_blank" rel="noopener">↗ Vue participant</a>
+    </div>
     <nav class="host-nav" id="host-nav">
-      <button data-panel="overview" class="active">Vue d'ensemble</button>
-      <button data-panel="projects">Projets</button>
-      <button data-panel="consultation">Consultation</button>
-      <button data-panel="moderation">Modération</button>
-      <button data-panel="settings">Paramètres</button>
+      <button data-panel="overview" class="active"><span class="nav-label">Vue d'ensemble</span></button>
+      <button data-panel="projects"><span class="nav-label">Projets</span><span class="nav-badge" data-badge="projects"></span></button>
+      <button data-panel="consultation"><span class="nav-label">Consultation</span><span class="nav-badge" data-badge="consultation"></span></button>
+      <button data-panel="moderation"><span class="nav-label">Modération</span><span class="nav-badge" data-badge="moderation"></span></button>
+      <button data-panel="settings"><span class="nav-label">Paramètres</span></button>
     </nav>
-    <div style="margin-top:auto;display:flex;flex-direction:column;gap:var(--sp-2);">
-      <a class="btn btn-ghost btn-sm" id="open-projector" target="_blank" rel="noopener">🖥 Écran de projection</a>
-      <a class="btn btn-ghost btn-sm" id="open-participant" target="_blank" rel="noopener">↗ Vue participant</a>
+    <div style="margin-top:auto;">
       <button class="btn btn-ghost btn-sm" id="logout-btn">Se déconnecter</button>
     </div>
   </aside>
@@ -46,6 +48,7 @@
         <span class="badge badge-live" id="presence-badge"><span class="badge-dot"></span> 0 en ligne</span>
         <button class="btn btn-outline btn-sm" id="show-qr-btn">QR / Lien</button>
         <a class="btn btn-outline btn-sm" id="export-btn">Exporter (.zip)</a>
+        <a class="btn btn-outline btn-sm" id="export-pdf-btn">Rapport (.pdf)</a>
       </div>
     </div>
 

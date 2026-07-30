@@ -16,6 +16,7 @@
 .hero .lede { font-size: var(--fs-md); max-width: 38ch; }
 .hero-actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); flex-wrap: wrap; }
 .hero-dial-wrap { display: flex; justify-content: center; }
+.hero-logo { width: 240px; height: 240px; object-fit: contain; }
 
 .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); margin-top: var(--sp-7); }
 .choice-card { padding: var(--sp-6); }
@@ -78,16 +79,29 @@ dialog.modal::backdrop { background: rgba(10, 15, 44, 0.55); backdrop-filter: bl
   background: var(--ink); color: var(--night-text-soft); padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-5);
 }
 .host-sidebar .brand { color: #fff; }
+.host-sidebar .btn-outline { border-color: var(--night-border); color: var(--night-text-soft); }
+.host-sidebar .btn-outline:hover:not(:disabled) { border-color: var(--night-text-soft); color: #fff; }
 .host-nav { display: flex; flex-direction: column; gap: var(--sp-1); }
 .host-nav button {
-  display: flex; align-items: center; gap: var(--sp-3); width: 100%; text-align: left; padding: var(--sp-3); border-radius: var(--radius-sm);
-  background: transparent; border: none; color: var(--night-text-soft); font-weight: 600; font-size: var(--fs-sm); cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); width: 100%; text-align: left; padding: var(--sp-3); border-radius: var(--radius-sm);
+  background: transparent; border: none; color: var(--night-text-soft); font-weight: 700; font-size: var(--fs-sm); cursor: pointer;
   transition: background 0.12s var(--ease), color 0.12s var(--ease);
 }
-.host-nav button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.host-nav button:hover:not(:disabled) { background: rgba(255,255,255,0.06); color: #fff; }
 .host-nav button.active { background: var(--brass); color: #fff; }
-.host-nav .step-num { font-family: var(--font-mono); font-size: var(--fs-xs); opacity: 0.7; }
+.host-nav .nav-label { flex: 1; }
+.host-nav .nav-badge {
+  font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 2px 7px; border-radius: var(--radius-pill); background: var(--green); color: #fff; white-space: nowrap;
+}
+.host-nav .nav-badge:empty { display: none; }
+.host-nav button.active .nav-badge { background: rgba(255,255,255,0.25); }
+.host-nav button.nav-current:not(.active) { color: #fff; }
+.host-nav button.nav-current:not(.active) .nav-label::before {
+  content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: var(--sp-2); flex-shrink: 0;
+}
 .host-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+.host-nav button:disabled .nav-badge { display: none; }
 
 .host-main { padding: var(--sp-6); overflow-y: auto; }
 .host-panel { display: none; }
@@ -101,7 +115,33 @@ dialog.modal::backdrop { background: rgba(10, 15, 44, 0.55); backdrop-filter: bl
 .stat-tile .k { font-size: var(--fs-sm); color: var(--ink-soft); }
 
 .host-topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-5); flex-wrap: wrap; }
-.host-actions-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-4); }
+.host-actions-row { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4); }
+
+/* Stepper de consultation (§5.2) — ligne unique : navigation d'axe +
+   séquence des 4 étapes, avec bandeau d'aide contextuelle en dessous. */
+.stepper-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.stepper-steps { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; flex: 1; justify-content: center; }
+.stepper-step {
+  display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--ink-soft); font-size: var(--fs-sm); font-weight: 700;
+  cursor: pointer; transition: all 0.12s var(--ease);
+}
+.stepper-step:hover:not(:disabled) { border-color: var(--brass); color: var(--ink); }
+.stepper-step .stepper-num {
+  display: inline-flex; align-items: center; justify-content: center; width: 1.4em; height: 1.4em; border-radius: 50%;
+  background: var(--border); color: var(--ink-soft); font-family: var(--font-mono); font-size: var(--fs-xs);
+}
+.stepper-step.active { background: var(--brass); border-color: var(--brass); color: #fff; }
+.stepper-step.active .stepper-num { background: rgba(255,255,255,0.25); color: #fff; }
+.stepper-step.done .stepper-num { background: var(--brass-100); color: var(--brass-600); }
+.stepper-arrow { color: var(--ink-faint); font-size: var(--fs-sm); }
+.stepper-axis-btn { flex-shrink: 0; white-space: nowrap; }
+.stepper-help { margin: var(--sp-2) 0 0; }
+@media (max-width: 640px) {
+  .stepper-step .stepper-label { display: none; }
+  .stepper-row { justify-content: space-between; }
+}
+
 
 .mod-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: var(--sp-2); flex-wrap: wrap; }
 .mod-row .txt { flex: 1; font-size: var(--fs-sm); }
@@ -129,8 +169,19 @@ dialog.modal::backdrop { background: rgba(10, 15, 44, 0.55); backdrop-filter: bl
    --------------------------------------------------------------------- */
 
 .projector-body { background: var(--night); color: var(--night-text); min-height: 100vh; font-family: var(--font-body); }
-.proj-header { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-5) var(--sp-7); }
+/* L'écran de projection tourne en boucle sur un vidéoprojecteur, sans
+   navigation utilisateur directe : le pied de page mentions légales n'y a
+   pas sa place (il reste accessible depuis les autres écrans). */
+body.projector-body .fr-footer-legal { display: none; }
+.proj-header { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-5) var(--sp-7); gap: var(--sp-5); }
 .proj-header .brand { color: #fff; }
+.step-timer-slot-proj:empty { display: none; }
+.step-timer-slot-proj .step-timer {
+  font-size: clamp(1.4rem, 2.4vw, 2rem); padding: var(--sp-2) var(--sp-5);
+  background: var(--night-surface); color: #fff; border: 1.5px solid var(--night-border);
+}
+.step-timer-slot-proj .step-timer.step-timer-warning { background: var(--red-700); color: #fff; border-color: var(--red-700); }
+.step-timer-slot-proj .step-timer.step-timer-elapsed { background: var(--red-700); color: #fff; border-color: var(--red-700); }
 .proj-main { padding: 0 var(--sp-7) var(--sp-7); display: flex; flex-direction: column; gap: var(--sp-6); align-items: center; text-align: center; }
 .proj-title { font-size: clamp(2rem, 4.2vw, var(--fs-4xl)); max-width: 22ch; }
 .proj-sub { color: var(--night-text-soft); font-size: var(--fs-lg); }
@@ -140,9 +191,117 @@ dialog.modal::backdrop { background: rgba(10, 15, 44, 0.55); backdrop-filter: bl
 .proj-cotation .tile .pct { font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 700; }
 .proj-cotation .tile .lbl { font-size: var(--fs-md); color: var(--night-text-soft); margin-top: var(--sp-2); }
 
+/* Volet projet permanent (§3), compact, affiché en tête de l'écran de
+   projection pendant toute la consultation. Réutilise .project-panel(-dark)
+   défini dans style.css, avec une mise en page horizontale adaptée au
+   grand écran plutôt qu'une colonne verticale. */
+.proj-project-panel { width: min(1100px, 92vw); margin-bottom: var(--sp-2); }
+.proj-project-panel .project-panel {
+  flex-direction: row; align-items: center; gap: var(--sp-5); text-align: left; position: static;
+}
+.proj-project-panel .project-panel-img { width: 110px; height: 78px; flex-shrink: 0; }
+.proj-project-panel .project-panel-title { font-size: var(--fs-lg); }
+.proj-project-panel .project-panel-meta { grid-template-columns: repeat(4, auto); column-gap: var(--sp-5); }
+.proj-project-panel .map-embed { display: none; } /* la carte reste réservée au volet participant, trop d'infos pour la projection */
+.proj-project-panel .axis-progress { display: none; } /* redondant avec le cadran de phase déjà affiché sur cet écran */
+@media (max-width: 900px) {
+  .proj-project-panel .project-panel { flex-direction: column; align-items: stretch; text-align: center; }
+  .proj-project-panel .project-panel-meta { grid-template-columns: auto 1fr; }
+}
+
 .proj-list { width: min(900px, 92vw); text-align: left; display: flex; flex-direction: column; gap: var(--sp-3); }
 .proj-list .row { background: var(--night-surface); border: 1px solid var(--night-border); border-radius: var(--radius-sm); padding: var(--sp-4) var(--sp-5); }
 .proj-list .row .top { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: var(--fs-md); margin-bottom: var(--sp-2); }
 .proj-list .bar-track { background: var(--night-surface-2); height: 10px; border-radius: var(--radius-pill); overflow: hidden; }
 
 .proj-footer { position: fixed; bottom: var(--sp-5); right: var(--sp-7); font-family: var(--font-mono); color: var(--night-text-soft); font-size: var(--fs-sm); }
+
+/* ---------------------------------------------------------------------
+   Volet projet permanent (§3) — panneau latéral affiché pendant toute la
+   consultation (participant + projecteur), avec image/résumé/métadonnées/
+   carte + progression par axe. Colonne fixe ~280px, réductible sur mobile
+   (empilée au-dessus du contenu de l'étape plutôt que sur le côté).
+   --------------------------------------------------------------------- */
+
+.consultation-layout { display: grid; grid-template-columns: 280px 1fr; gap: var(--sp-6); align-items: start; }
+@media (max-width: 860px) {
+  .consultation-layout { grid-template-columns: 1fr; }
+}
+
+.project-panel {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+  padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3);
+  position: sticky; top: var(--sp-5);
+}
+@media (max-width: 860px) {
+  .project-panel { position: static; }
+}
+.project-panel > .step-timer-slot:not(:empty) { align-self: flex-start; }
+.project-panel-img { width: 100%; height: 130px; object-fit: cover; border-radius: var(--radius-sm); }
+.project-panel-title { font-size: var(--fs-md); margin: 0; }
+.project-panel-desc { margin: 0; color: var(--ink-soft); }
+.project-panel-meta { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-1) var(--sp-3); margin: 0; font-size: var(--fs-sm); }
+.project-panel-meta dt { color: var(--ink-faint); font-weight: 700; }
+.project-panel-meta dd { margin: 0; color: var(--ink-soft); }
+
+/* Variante sombre pour l'écran de projection */
+.project-panel-dark {
+  background: var(--night-surface); border-color: var(--night-border);
+}
+.project-panel-dark .project-panel-title { color: #fff; }
+.project-panel-dark .project-panel-desc,
+.project-panel-dark .project-panel-meta dd { color: var(--night-text-soft); }
+.project-panel-dark .project-panel-meta dt { color: var(--night-text-faint, var(--night-text-soft)); }
+
+/* Mini-stepper de progression par axe (lecture seule) */
+.axis-progress { display: flex; flex-direction: column; gap: var(--sp-1); align-items: center; padding-top: var(--sp-2); border-top: 1px solid var(--border); }
+.project-panel-dark .axis-progress { border-top-color: var(--night-border); }
+.axis-progress-dots { display: flex; gap: 6px; }
+.axis-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); display: inline-block; }
+.axis-dot.done { background: var(--brass-100); }
+.axis-dot.current { background: var(--brass); transform: scale(1.25); }
+.project-panel-dark .axis-dot { background: var(--night-border); }
+.project-panel-dark .axis-dot.done { background: rgba(255,255,255,0.35); }
+.project-panel-dark .axis-dot.current { background: var(--brass); }
+
+/* Groupe de champs optionnels repliable dans le formulaire de soumission */
+.field-group { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0; }
+.field-group summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 700; color: var(--ink-soft); }
+.field-group-body { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
+
+/* Boîte de dialogue "Gérer mes données" (RGPD, §7) */
+.privacy-dialog-overlay {
+  position: fixed; inset: 0; background: rgba(20, 20, 20, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-4); z-index: 200;
+}
+.privacy-dialog {
+  max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto;
+  padding: var(--sp-4);
+}
+.privacy-dialog-options { padding-left: 1.1em; display: flex; flex-direction: column; gap: var(--sp-2); margin: var(--sp-2) 0; }
+.privacy-dialog-options li { line-height: 1.4; }
+
+/* Badge conflit d'intérêt (§7) : signale au participant qu'il consulte ou
+   vote pour son propre projet. */
+.conflict-badge {
+  background: var(--red-100); color: var(--red-700); border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3); font-size: var(--fs-xs); font-weight: 700;
+  margin: 0 0 var(--sp-3); line-height: 1.4;
+}
+.project-panel-dark .conflict-badge { background: rgba(206, 0, 51, 0.25); color: #ffb3c2; }
+.conflict-inline-badge { display: inline-block; margin-bottom: var(--sp-2); }
+
+/* Vue super-admin (nettoyage de base) */
+.superadmin-table { width: 100%; border-collapse: collapse; margin-top: var(--sp-4); }
+.superadmin-table th, .superadmin-table td { text-align: left; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border); }
+.superadmin-table th { font-size: var(--fs-sm); color: var(--ink-soft); }
+
+/* Repère réglementaire national par axe (objectifs France + stratégie) */
+.axis-national-target {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--france-blue);
+  background: color-mix(in srgb, var(--france-blue) 6%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}

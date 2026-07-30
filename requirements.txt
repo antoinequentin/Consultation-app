@@ -8,6 +8,9 @@ itsdangerous==2.2.0
 qrcode[pil]==8.0
 pydantic==2.10.4
 
+# Génération du rapport PDF de restitution (§7 du cahier des charges).
+reportlab==4.4.10
+
 # Pilote PostgreSQL (optionnel - nécessaire seulement si DATABASE_URL
 # pointe vers PostgreSQL plutôt que SQLite, cf. déploiement SSPCloud).
 psycopg2-binary==2.9.10

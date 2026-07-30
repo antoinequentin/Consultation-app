@@ -172,7 +172,9 @@ async def _handle(code: str, conn: Connection, msg_type: str, payload: dict) -> 
             code,
             lambda db, w: state_machine.submit_project(
                 db, w, conn.participant_id, conn.display_name,
-                title=data.title, description=data.description, context=data.context, image_url=data.image_url,
+                title=data.title, description=data.description, context=data.context,
+                image_url=data.image_url, map_url=data.map_url,
+                porteur=data.porteur, budget=data.budget, territoire=data.territoire, stade=data.stade,
             ),
         )
         await manager.send_to(conn, "ack", {"message": "Votre projet a été soumis."})

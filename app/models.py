@@ -110,6 +110,22 @@ class Webinar(Base):
     current_axis_index: Mapped[int] = mapped_column(Integer, default=0)
     current_step: Mapped[int] = mapped_column(Integer, default=ConsultationStep.NONE.value)
 
+    # Minuteur par étape (§5.1 du cahier des charges) — horodatage du
+    # dernier changement d'étape/axe/projet, utilisé par les clients (host,
+    # participant, projecteur) pour calculer un compte à rebours cohérent
+    # entre tous (step_started_at + step_duration_seconds(step)). Recalculé
+    # côté client plutôt que diffusé "en direct" seconde par seconde : pas
+    # de charge WebSocket supplémentaire, juste un point de départ fiable.
+    step_started_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Durée configurable indépendamment pour chaque étape de consultation
+    # (NULL = pas de minuteur pour cette étape, décision validée : pas de
+    # durée unique commune à toutes les étapes). Exprimée en secondes.
+    step_duration_positifs: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    step_duration_negatifs: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    step_duration_vote: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    step_duration_ameliorations: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     moderation_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     allow_project_proposals: Mapped[bool] = mapped_column(Boolean, default=True)
     max_propositions_per_participant: Mapped[int] = mapped_column(Integer, default=5)
@@ -145,6 +161,44 @@ class Project(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     context: Mapped[str] = mapped_column(Text, default="")  # "état des lieux" (texte long, optionnel)
     image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    # Lien cartes.gouv.fr (centré par le participant/animateur sur le
+    # projet), affiché en encart intégré (<iframe>) dans les vues projet
+    # (§2.2c du cahier des charges).
+    map_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+    # Métadonnées clés du projet (§2.2a / §3 du cahier des charges) —
+    # optionnelles : remplies soit par le script de seed CSV (non traité
+    # dans ce chantier), soit manuellement par le participant/animateur au
+    # moment de la soumission. Affichées dans le volet projet permanent
+    # (§3) pendant la consultation.
+    porteur: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    budget: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    territoire: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    stade: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+    # Champs additionnels du CSV de seed (§2.2a / §7.3 du cahier des charges).
+    type_projet: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    population: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    contrainte: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enjeux: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    url_boussole: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+    # Marque un projet issu du fond de projets de secours importé par CSV
+    # (§8) : permet de le distinguer des projets proposés par les
+    # participants, sans introduire de notion de "bibliothèque globale"
+    # hors webinaire (chantier de modélisation plus lourd, non traité ici).
+    is_seed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Mode "projet type" (§7) : permet à l'animateur de dupliquer un projet
+    # existant (typiquement un projet de seed déjà utilisé dans un webinaire
+    # précédent, ou tout autre projet dont il a gardé le code) vers le
+    # webinaire courant, sans ressaisir toutes les métadonnées. Référence
+    # auto-jointe sur la même table ; ondelete="SET NULL" pour ne jamais
+    # bloquer la suppression du projet d'origine.
+    duplicated_from_id: Mapped[int | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="SET NULL", use_alter=True),
+        nullable=True,
+    )
 
     proposed_by: Mapped[str | None] = mapped_column(
         ForeignKey("participants.id", ondelete="SET NULL"), nullable=True
@@ -265,6 +319,29 @@ class CotationResponse(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     axis: Mapped["Axis"] = relationship("Axis", back_populates="cotations")
+
+
+class StepTimingLog(Base):
+    """Historique du temps réel passé sur chaque étape de consultation
+    (§7.5 du cahier des charges) — utile a posteriori pour calibrer les
+    prochains ateliers. Une ligne par étape effectivement quittée (pas de
+    ligne pour l'étape en cours, qui n'a pas encore de durée connue)."""
+
+    __tablename__ = "step_timing_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    webinar_id: Mapped[int] = mapped_column(ForeignKey("webinars.id", ondelete="CASCADE"))
+    project_id: Mapped[int | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="SET NULL"), nullable=True
+    )
+    axis_index: Mapped[int] = mapped_column(Integer)
+    step: Mapped[int] = mapped_column(Integer)  # ConsultationStep
+    started_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    duration_seconds: Mapped[int] = mapped_column(Integer)
+    planned_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    webinar: Mapped["Webinar"] = relationship("Webinar")
 
 
 class Participant(Base):
